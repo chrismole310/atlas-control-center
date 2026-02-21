@@ -1,64 +1,79 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Video, BookOpen, FileText, Mic, Globe, Package, TrendingUp, Bot, Music, Sparkles, Plus, User } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+
+const portals = [
+  { id: "ugc-studio", name: "UGC Studio", icon: Video, metric: "$12,450/mo", gradient: "from-blue-500 to-purple-600" },
+  { id: "books-empire", name: "Books Empire", icon: BookOpen, metric: "$4,280/mo", gradient: "from-purple-500 to-pink-500" },
+  { id: "pdf-factory", name: "PDF Factory", icon: FileText, metric: "$8,940/mo", gradient: "from-pink-500 to-orange-500" },
+  { id: "audio-studio", name: "Audio Studio", icon: Mic, metric: "$1,850/mo", gradient: "from-orange-500 to-yellow-500" },
+  { id: "omni-publisher", name: "Omni-Publisher", icon: Globe, metric: "67 uploads today", gradient: "from-yellow-500 to-green-500" },
+  { id: "skills-store", name: "Skills Store", icon: Package, metric: "$2,450/mo", gradient: "from-green-500 to-teal-500" },
+  { id: "market-intel", name: "Market Intel", icon: TrendingUp, metric: "3 trends detected", gradient: "from-teal-500 to-cyan-500" },
+  { id: "ai-agents", name: "AI Agents", icon: Bot, metric: "8 agents active", gradient: "from-cyan-500 to-blue-500" },
+  { id: "lofi-radio", name: "Lofi Radio", icon: Music, metric: "$3,431/mo", gradient: "from-blue-500 to-indigo-600" },
+  { id: "trend-scanner", name: "Trend Scanner", icon: Sparkles, metric: "12 opportunities", gradient: "from-indigo-500 to-violet-600" },
+  { id: "portal-creator", name: "Portal Creator", icon: Plus, metric: "Ready to build", gradient: "from-violet-500 to-purple-600" },
+];
+
+function AnimatedRevenue() {
+  const [revenue, setRevenue] = useState(47382);
+  useEffect(() => {
+    const interval = setInterval(() => setRevenue((prev) => prev + Math.floor(Math.random() * 10) - 3), 2000);
+    return () => clearInterval(interval);
+  }, []);
+  return <span className="font-mono text-2xl font-bold text-emerald-400">${revenue.toLocaleString()}</span>;
+}
+
+function CurrentTime() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return <span className="text-sm text-slate-400">{time.toLocaleDateString()} {time.toLocaleTimeString()}</span>;
+}
+
+export default function Dashboard() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <h1 className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">ATLAS CONTROL CENTER</h1>
+            <Badge variant="secondary" className="bg-slate-800 text-slate-300">v1.0</Badge>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-end"><span className="text-xs text-slate-500">Live Revenue</span><AnimatedRevenue /></div>
+            <CurrentTime />
+            <Avatar className="h-9 w-9 border border-slate-700"><AvatarFallback className="bg-slate-800 text-slate-300"><User className="h-4 w-4" /></AvatarFallback></Avatar>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+      <main className="mx-auto max-w-7xl px-6 py-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {portals.map((portal, index) => {
+            const Icon = portal.icon;
+            return (
+              <motion.div key={portal.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.05 }}>
+                <Card onClick={() => console.log(`Portal: ${portal.id}`)} className="group relative cursor-pointer overflow-hidden border-0 bg-slate-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${portal.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-10`} />
+                  <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br ${portal.gradient} opacity-20 blur-2xl transition-all duration-300 group-hover:scale-150`} />
+                  <div className="relative z-10">
+                    <div className={`mb-4 inline-flex rounded-xl bg-gradient-to-br ${portal.gradient} p-3`}><Icon className="h-6 w-6 text-white" /></div>
+                    <h3 className="mb-1 text-lg font-semibold text-slate-100">{portal.name}</h3>
+                    <p className="text-sm text-slate-400">{portal.metric}</p>
+                  </div>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       </main>
     </div>
   );
