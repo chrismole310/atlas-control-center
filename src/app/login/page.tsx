@@ -36,7 +36,7 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("trax_token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/trax");
     } catch (err) {
@@ -70,7 +70,7 @@ export default function LoginPage() {
                 type="text"
                 placeholder="Enter username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                 className="bg-zinc-800 border-zinc-700 text-white"
                 required
               />
@@ -82,7 +82,7 @@ export default function LoginPage() {
                 type="password"
                 placeholder="Enter password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 className="bg-zinc-800 border-zinc-700 text-white"
                 required
               />

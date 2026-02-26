@@ -26,6 +26,16 @@ import Link from "next/link"
 
 const portals = [
   {
+    id: "trax",
+    name: "TRAX",
+    description: "Autonomous CFO & trading agent",
+    icon: TrendingUp,
+    gradient: "from-green-500 to-emerald-600",
+    status: "active",
+    revenue: "Paper Mode",
+    href: "/trax"
+  },
+  {
     id: "ugc-studio",
     name: "UGC Studio",
     description: "AI-powered content creation",
