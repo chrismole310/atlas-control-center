@@ -12,11 +12,24 @@ import random
 
 from database import (
     init_db, get_db, User, Capital, Transaction, Trade,
-    UserRole, TradeStatus, PaperBalance, PaperPosition, PaperTrade
+    UserRole, TradeStatus, PaperBalance, PaperPosition, PaperTrade,
+    CongressTrade, Settlement, HousingListing, GovContract
 )
 from paper_trading import (
     paper_buy, paper_sell, get_paper_portfolio,
     fetch_live_prices, detect_arbitrage, get_or_create_paper_balance
+)
+from congress_tracker import (
+    refresh_congress_data, get_recent_trades, get_leaderboard, generate_signals
+)
+from settlement_finder import (
+    refresh_settlements, get_open_settlements, get_settlement_stats
+)
+from housing_lottery import (
+    refresh_listings, get_open_listings, mark_applied, get_housing_stats
+)
+from gov_contracts import (
+    refresh_contracts, get_recent_contracts, get_contract_signals, get_contract_stats
 )
 from auth import (
     verify_password, get_password_hash, create_access_token,
@@ -469,7 +482,6 @@ async def paper_portfolio(db: Session = Depends(get_db)):
 @app.post("/api/v1/paper/trade")
 async def execute_paper_trade(
     trade: PaperTradeRequest,
-    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     if trade.action == "buy":
@@ -493,7 +505,6 @@ async def execute_paper_trade(
 @app.get("/api/v1/paper/history")
 async def paper_trade_history(
     limit: int = 50,
-    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     trades = db.query(PaperTrade).order_by(PaperTrade.timestamp.desc()).limit(limit).all()
@@ -544,6 +555,197 @@ async def market_arbitrage():
         "opportunities": opportunities,
         "scanned_at": datetime.utcnow().isoformat(),
     }
+
+# ==================== CONGRESS TRACKER ENDPOINTS ====================
+
+@app.get("/api/v1/congress/trades")
+async def congress_trades(
+    limit: int = 100,
+    vip_only: bool = False,
+    db: Session = Depends(get_db)
+):
+    trades = get_recent_trades(db, limit=limit, vip_only=vip_only)
+    return {
+        "trades": [
+            {
+                "id": t.id,
+                "politician": t.politician,
+                "chamber": t.chamber,
+                "party": t.party,
+                "ticker": t.ticker,
+                "asset_description": t.asset_description,
+                "trade_type": t.trade_type,
+                "amount_range": t.amount_range,
+                "amount_min": t.amount_min,
+                "amount_max": t.amount_max,
+                "transaction_date": t.transaction_date,
+                "disclosure_date": t.disclosure_date,
+                "disclosure_lag_days": t.disclosure_lag_days,
+                "is_vip": bool(t.is_vip),
+                "ptr_link": t.ptr_link,
+            }
+            for t in trades
+        ],
+        "count": len(trades),
+    }
+
+@app.get("/api/v1/congress/signals")
+async def congress_signals(db: Session = Depends(get_db)):
+    trades = get_recent_trades(db, limit=200, vip_only=True)
+    signals = generate_signals(trades)
+    return {"signals": signals, "count": len(signals)}
+
+@app.get("/api/v1/congress/leaderboard")
+async def congress_leaderboard(db: Session = Depends(get_db)):
+    return {"leaderboard": get_leaderboard(db)}
+
+@app.post("/api/v1/congress/refresh")
+async def congress_refresh(db: Session = Depends(get_db)):
+    result = await refresh_congress_data(db)
+    return result
+
+@app.get("/api/v1/congress/stats")
+async def congress_stats(db: Session = Depends(get_db)):
+    total = db.query(CongressTrade).count()
+    vip = db.query(CongressTrade).filter(CongressTrade.is_vip == 1).count()
+    purchases = db.query(CongressTrade).filter(CongressTrade.trade_type == "Purchase").count()
+    sales = db.query(CongressTrade).filter(CongressTrade.trade_type == "Sale").count()
+    return {
+        "total_trades": total,
+        "vip_trades": vip,
+        "purchases": purchases,
+        "sales": sales,
+        "last_fetch": db.query(CongressTrade).order_by(CongressTrade.fetched_at.desc()).first().fetched_at.isoformat() if total else None,
+    }
+
+# ==================== SETTLEMENT FINDER ENDPOINTS ====================
+
+@app.get("/api/v1/settlements")
+async def list_settlements(
+    limit: int = 50,
+    category: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    settlements = get_open_settlements(db, limit=limit, category=category)
+    return {
+        "settlements": [
+            {
+                "id": s.id,
+                "case_name": s.case_name,
+                "company": s.company,
+                "settlement_amount": s.settlement_amount,
+                "deadline": s.deadline,
+                "claim_url": s.claim_url,
+                "description": s.description,
+                "category": s.category,
+                "estimated_payout": s.estimated_payout,
+                "status": s.status,
+                "filed_at": s.filed_at.isoformat() if s.filed_at else None,
+            }
+            for s in settlements
+        ],
+        "stats": get_settlement_stats(db),
+    }
+
+@app.post("/api/v1/settlements/refresh")
+async def settlements_refresh(db: Session = Depends(get_db)):
+    return await refresh_settlements(db)
+
+@app.post("/api/v1/settlements/{settlement_id}/filed")
+async def mark_settlement_filed(settlement_id: int, db: Session = Depends(get_db)):
+    s = db.query(Settlement).filter(Settlement.id == settlement_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Settlement not found")
+    s.status = "filed"
+    s.filed_at = datetime.utcnow()
+    db.commit()
+    return {"message": "Marked as filed", "id": settlement_id}
+
+# ==================== HOUSING LOTTERY ENDPOINTS ====================
+
+@app.get("/api/v1/housing/listings")
+async def housing_listings(
+    borough: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    listings = get_open_listings(db, borough=borough)
+    return {
+        "listings": [
+            {
+                "id": l.id,
+                "lottery_id": l.lottery_id,
+                "building_name": l.building_name,
+                "address": l.address,
+                "borough": l.borough,
+                "units_available": l.units_available,
+                "income_min": l.income_min,
+                "income_max": l.income_max,
+                "rent_min": l.rent_min,
+                "rent_max": l.rent_max,
+                "deadline": l.deadline,
+                "lottery_url": l.lottery_url,
+                "status": l.status,
+                "applied_at": l.applied_at.isoformat() if l.applied_at else None,
+            }
+            for l in listings
+        ],
+        "stats": get_housing_stats(db),
+    }
+
+@app.post("/api/v1/housing/refresh")
+async def housing_refresh(db: Session = Depends(get_db)):
+    return await refresh_listings(db)
+
+@app.post("/api/v1/housing/{listing_id}/apply")
+async def housing_apply(listing_id: int, db: Session = Depends(get_db)):
+    listing = mark_applied(db, listing_id)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return {"message": "Marked as applied", "id": listing_id, "lottery_url": listing.lottery_url}
+
+# ==================== GOV CONTRACTS ENDPOINTS ====================
+
+@app.get("/api/v1/contracts")
+async def list_contracts(
+    limit: int = 50,
+    sector: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    contracts = get_recent_contracts(db, limit=limit, sector=sector)
+    return {
+        "contracts": [
+            {
+                "id": c.id,
+                "award_id": c.award_id,
+                "recipient": c.recipient,
+                "awarding_agency": c.awarding_agency,
+                "award_amount": c.award_amount,
+                "award_amount_m": round(c.award_amount / 1e6, 1),
+                "description": c.description,
+                "sector": c.sector,
+                "award_date": c.award_date,
+                "period_of_performance": c.period_of_performance,
+                "place_of_performance": c.place_of_performance,
+                "naics_code": c.naics_code,
+                "usaspending_url": c.usaspending_url,
+                "trading_signal": c.trading_signal,
+            }
+            for c in contracts
+        ],
+        "stats": get_contract_stats(db),
+    }
+
+@app.get("/api/v1/contracts/signals")
+async def contract_signals(db: Session = Depends(get_db)):
+    signals = get_contract_signals(db)
+    return {"signals": signals, "count": len(signals)}
+
+@app.post("/api/v1/contracts/refresh")
+async def contracts_refresh(
+    days_back: int = 7,
+    db: Session = Depends(get_db)
+):
+    return await refresh_contracts(db, days_back=days_back)
 
 # ==================== COINBASE INTEGRATION ====================
 
