@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
@@ -10,7 +12,11 @@ import random
 
 from database import (
     init_db, get_db, User, Capital, Transaction, Trade,
-    UserRole, TradeStatus
+    UserRole, TradeStatus, PaperBalance, PaperPosition, PaperTrade
+)
+from paper_trading import (
+    paper_buy, paper_sell, get_paper_portfolio,
+    fetch_live_prices, detect_arbitrage, get_or_create_paper_balance
 )
 from auth import (
     verify_password, get_password_hash, create_access_token,
@@ -445,3 +451,125 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+# ==================== PAPER TRADING ENDPOINTS ====================
+
+class PaperTradeRequest(BaseModel):
+    symbol: str
+    action: str   # "buy" or "sell"
+    usd_amount: Optional[float] = None
+    quantity: Optional[float] = None
+    sell_all: bool = False
+
+@app.get("/api/v1/paper/portfolio")
+async def paper_portfolio(db: Session = Depends(get_db)):
+    return await get_paper_portfolio(db)
+
+@app.post("/api/v1/paper/trade")
+async def execute_paper_trade(
+    trade: PaperTradeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    if trade.action == "buy":
+        if not trade.usd_amount:
+            raise HTTPException(status_code=400, detail="usd_amount required for buy")
+        result = await paper_buy(db, trade.symbol.upper(), trade.usd_amount)
+    elif trade.action == "sell":
+        result = await paper_sell(db, trade.symbol.upper(), trade.quantity, trade.sell_all)
+    else:
+        raise HTTPException(status_code=400, detail="action must be 'buy' or 'sell'")
+
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Trade failed"))
+
+    await manager.broadcast({
+        "type": "paper_trade",
+        "data": result
+    })
+    return result
+
+@app.get("/api/v1/paper/history")
+async def paper_trade_history(
+    limit: int = 50,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    trades = db.query(PaperTrade).order_by(PaperTrade.timestamp.desc()).limit(limit).all()
+    return {
+        "trades": [
+            {
+                "id": t.id,
+                "symbol": t.symbol,
+                "action": t.action,
+                "quantity": t.quantity,
+                "price": t.price,
+                "total_value": t.total_value,
+                "pnl": t.pnl,
+                "timestamp": t.timestamp.isoformat(),
+                "note": t.note,
+            }
+            for t in trades
+        ]
+    }
+
+@app.get("/api/v1/paper/reset")
+async def reset_paper_balance(
+    current_user: User = Depends(require_role(UserRole.CEO)),
+    db: Session = Depends(get_db)
+):
+    """Reset paper trading to $1000 starting balance (CEO only)."""
+    db.query(PaperTrade).delete()
+    db.query(PaperPosition).delete()
+    db.query(PaperBalance).delete()
+    db.commit()
+    balance = get_or_create_paper_balance(db)
+    return {"message": "Paper account reset to $1,000", "balance": balance.usd_balance}
+
+# ==================== MARKET DATA ENDPOINTS ====================
+
+@app.get("/api/v1/market/prices")
+async def market_prices():
+    """Live prices for BTC, ETH, SOL via CoinGecko."""
+    return await fetch_live_prices()
+
+@app.get("/api/v1/market/arbitrage")
+async def market_arbitrage():
+    """Detect arbitrage and momentum opportunities."""
+    prices = await fetch_live_prices()
+    opportunities = await detect_arbitrage(prices)
+    return {
+        "prices": prices,
+        "opportunities": opportunities,
+        "scanned_at": datetime.utcnow().isoformat(),
+    }
+
+# ==================== COINBASE INTEGRATION ====================
+
+from coinbase_service import coinbase_service, APPROVED_PAIRS
+
+@app.get("/api/coinbase/connect")
+async def coinbase_connect():
+    """Connect to Coinbase API"""
+    success = coinbase_service.connect()
+    return {"connected": success}
+
+@app.get("/api/coinbase/balance")
+async def coinbase_balance():
+    """Get Coinbase balances"""
+    return coinbase_service.get_balance()
+
+@app.get("/api/coinbase/prices")
+async def coinbase_prices():
+    """Get current prices"""
+    return coinbase_service.get_prices()
+
+@app.post("/api/coinbase/trade")
+async def coinbase_trade(product_id: str, side: str, amount: float):
+    """Execute trade (requires CEO approval)"""
+    return coinbase_service.execute_trade(product_id, side, amount)
+
+
+
+

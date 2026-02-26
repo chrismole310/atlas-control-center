@@ -58,6 +58,33 @@ class Trade(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     executed_at = Column(DateTime, nullable=True)
 
+class PaperBalance(Base):
+    __tablename__ = "paper_balance"
+    id = Column(Integer, primary_key=True)
+    usd_balance = Column(Float, default=1000.0)
+    total_pnl = Column(Float, default=0.0)
+    last_updated = Column(DateTime, default=datetime.utcnow)
+
+class PaperPosition(Base):
+    __tablename__ = "paper_positions"
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String)
+    quantity = Column(Float)
+    avg_entry_price = Column(Float)
+    opened_at = Column(DateTime, default=datetime.utcnow)
+
+class PaperTrade(Base):
+    __tablename__ = "paper_trades"
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String)
+    action = Column(String)
+    quantity = Column(Float)
+    price = Column(Float)
+    total_value = Column(Float)
+    pnl = Column(Float, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    note = Column(String, nullable=True)
+
 engine = create_engine("sqlite:///./trax.db", connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

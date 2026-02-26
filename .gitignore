@@ -1,1 +1,8 @@
 .vercel
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/trax.db
+*.env
+.env
+
