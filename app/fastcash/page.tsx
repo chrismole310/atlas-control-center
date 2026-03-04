@@ -62,15 +62,19 @@ export default function FastCashPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [proposal, setProposal] = useState("");
   const [generatingProposal, setGeneratingProposal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API}/jobs/top?tab=${activeTab}&limit=20`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setError(null);
       const data = await res.json();
       setJobs(data.jobs || []);
     } catch (e) {
       console.error(e);
+      setError("Failed to load jobs. Is the backend running?");
     } finally {
       setLoading(false);
     }
@@ -79,9 +83,12 @@ export default function FastCashPage() {
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch(`${API}/stats`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setError(null);
       setStats(await res.json());
     } catch (e) {
       console.error(e);
+      setError("Failed to load stats. Is the backend running?");
     }
   }, []);
 
@@ -112,14 +119,17 @@ export default function FastCashPage() {
       const res = await fetch(`${API}/apply/${job.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ job_id: job.id }),
+        body: JSON.stringify({ notes: "" }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setError(null);
       const data = await res.json();
       setProposal(data.proposal || "");
       fetchJobs();
       fetchStats();
     } catch (e) {
       console.error(e);
+      setError("Failed to generate proposal.");
     } finally {
       setGeneratingProposal(false);
     }
@@ -193,6 +203,13 @@ export default function FastCashPage() {
           : "Jobs Atlas can complete autonomously using Whisper (transcription) and Claude (writing)."}
       </p>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-900/50 border border-red-700 text-red-300 rounded-lg px-4 py-2 mb-4 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Job List */}
       {loading ? (
         <div className="text-center text-gray-500 py-12">Scanning job boards...</div>
@@ -265,6 +282,7 @@ export default function FastCashPage() {
                 <p className="text-gray-400 text-sm">{selectedJob.title}</p>
               </div>
               <button
+                aria-label="Close"
                 onClick={() => { setSelectedJob(null); setProposal(""); }}
                 className="text-gray-500 hover:text-white text-xl"
               >×</button>
