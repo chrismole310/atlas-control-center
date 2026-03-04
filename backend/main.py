@@ -184,6 +184,27 @@ async def startup_event():
     asyncio.create_task(_fastcash_scrape_loop())
     print("[FastCash] 2-hour scrape loop scheduled.")
 
+    # Market intelligence: daily at 3am UTC
+    from fastcash.market_scraper import run_market_intelligence_scrape as _market_scrape
+
+    async def _market_intelligence_loop():
+        from datetime import datetime as _dt, timedelta as _td
+        while True:
+            now = _dt.utcnow()
+            next_3am = now.replace(hour=3, minute=0, second=0, microsecond=0)
+            if next_3am <= now:
+                next_3am += _td(days=1)
+            secs = (next_3am - now).total_seconds()
+            print(f"[Market] Next analysis in {int(secs / 3600)}h {int((secs % 3600) / 60)}m")
+            await asyncio.sleep(secs)
+            try:
+                await asyncio.get_event_loop().run_in_executor(None, _market_scrape)
+            except Exception as e:
+                print(f"[Market] Daily scrape error: {e}")
+
+    asyncio.create_task(_market_intelligence_loop())
+    print("[Market] Daily 3am market intelligence scheduled.")
+
 # ============== AUTHENTICATION ENDPOINTS ==============
 
 @app.post("/api/v1/auth/register")
