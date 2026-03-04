@@ -84,7 +84,7 @@ function ScoreBar({ score, color = "bg-blue-500" }: { score: number; color?: str
           style={{ width: `${score * 10}%` }}
         />
       </div>
-      <span className="text-xs text-gray-400 w-4 text-right">{score}</span>
+      <span className="text-xs text-gray-400 w-4 text-right">{score.toFixed(0)}</span>
     </div>
   );
 }
@@ -179,14 +179,17 @@ export default function FastCashPage() {
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
+    let timeoutId: ReturnType<typeof setTimeout>;
     try {
       await fetch(`${API}/market/scrape`, { method: "POST" });
-      setTimeout(async () => {
+      timeoutId = setTimeout(async () => {
         await fetchMarketData();
         setAnalyzing(false);
       }, 4000);
     } catch {
+      clearTimeout(timeoutId!);
       setAnalyzing(false);
+      setError("Failed to run market analysis. Is the backend running?");
     }
   };
 
@@ -458,7 +461,7 @@ export default function FastCashPage() {
               <div>
                 <h2 className="text-lg font-bold text-white mb-4">📈 Trending Skills</h2>
                 <div className="bg-gray-900 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" aria-label="Trending skills from job postings">
                     <thead>
                       <tr className="border-b border-gray-800">
                         <th className="text-left px-4 py-3 text-gray-400 font-medium">Skill</th>
