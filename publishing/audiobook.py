@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import wave
+from datetime import datetime
 from pathlib import Path
 
 from publishing.database import get_conn, init_db
@@ -17,17 +18,29 @@ DEFAULT_VOICE = "en_US-lessac-medium"
 def _detect_chapters_from_text(text: str) -> list[tuple[str, str]]:
     """
     Split plain text into (chapter_title, chapter_text) pairs.
-    Detects patterns: 'Chapter 1', 'CHAPTER ONE', 'Part I', etc.
+    Detects patterns: 'Chapter 1', 'CHAPTER 8: LANDFALL', 'Part I', etc.
     Falls back to splitting into equal chunks if no chapters found.
     """
     pattern = re.compile(
-        r'^((?:Chapter|CHAPTER|Part|PART)\s+[\w\s]+|[A-Z][A-Z\s]{3,30})$',
+        # Pattern 1: Chapter/Part followed by number/word and optional ": Title"
+        r'^((?:Chapter|CHAPTER|Part|PART)\s+[^\n]+'
+        # Pattern 2: ALL CAPS line (spaces only, not \s, to prevent cross-line matching)
+        r'|[A-Z][A-Z ]{3,30})$',
         re.MULTILINE
     )
     matches = list(pattern.finditer(text))
 
-    if not matches:
-        # No chapter headings — split into 5000-word chunks
+    # Filter out front matter matches (body < 200 words = likely title/TOC/blurb)
+    real_chapters = []
+    for i, match in enumerate(matches):
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        body = text[start:end].strip()
+        if len(body.split()) >= 500:
+            real_chapters.append((match, body))
+
+    if not real_chapters:
+        # No chapter headings found — split into 5000-word chunks
         words = text.split()
         chunk_size = 5000
         chunks = []
@@ -37,13 +50,9 @@ def _detect_chapters_from_text(text: str) -> list[tuple[str, str]]:
         return chunks
 
     chapters = []
-    for i, match in enumerate(matches):
+    for match, body in real_chapters:
         title = match.group(0).strip()
-        start = match.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        body = text[start:end].strip()
-        if body:
-            chapters.append((title, body))
+        chapters.append((title, body))
     return chapters
 
 
@@ -196,6 +205,41 @@ def generate_audiobook(book_id: int, voice: str = DEFAULT_VOICE) -> dict:
             _text_to_wav(ch_text, wav_path, voice=voice)
             wav_files.append(wav_path)
             chapter_titles.append(ch_title)
+
+        # Build chapter timing data for transcript
+        chapter_data = []
+        cursor_s = 0.0
+        for i, (wav_path, ch_title, (_, ch_text)) in enumerate(zip(wav_files, chapter_titles, chapters)):
+            result = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-print_format", "json",
+                 "-show_streams", str(wav_path)],
+                capture_output=True, text=True, check=True
+            )
+            info = json.loads(result.stdout)
+            dur_s = float(info["streams"][0]["duration"])
+            chapter_data.append({
+                "index": i,
+                "title": ch_title,
+                "wav_file": f"audio_chapters/{wav_path.name}",
+                "start_seconds": round(cursor_s, 3),
+                "end_seconds": round(cursor_s + dur_s, 3),
+                "duration_seconds": round(dur_s, 3),
+                "word_count": len(ch_text.split()),
+                "text": ch_text,
+            })
+            cursor_s += dur_s
+
+        transcript = {
+            "book_id": book_id,
+            "book_title": book["title"],
+            "voice": voice,
+            "total_duration_seconds": round(cursor_s, 3),
+            "generated_at": datetime.now().isoformat(),
+            "chapters": chapter_data,
+        }
+        transcript_path = out_dir / "transcript.json"
+        transcript_path.write_text(json.dumps(transcript, indent=2, ensure_ascii=False))
+        print(f"[Publishing] Transcript saved: {transcript_path}")
 
         # Assemble M4B
         m4b_path = out_dir / "audiobook.m4b"
