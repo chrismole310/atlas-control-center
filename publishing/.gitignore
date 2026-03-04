@@ -1,0 +1,11 @@
+# Generated database files
+publishing.db
+publishing.db-shm
+publishing.db-wal
+
+# Large voice model binary (download via setup script)
+voices/*.onnx
+
+# Generated output files
+output/
+manuscripts/
