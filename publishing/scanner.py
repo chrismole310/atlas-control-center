@@ -46,7 +46,7 @@ def scan_manuscripts() -> list[dict]:
                 (title, slug, str(rtf_path.resolve()), "uploaded")
             )
             book_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            new_books.append({"id": book_id, "title": title, "slug": slug, "path": str(rtf_path)})
+            new_books.append({"id": book_id, "title": title, "slug": slug, "manuscript_path": str(rtf_path.resolve())})
             print(f"[Publishing] Registered: '{title}' (id={book_id})")
 
     return new_books

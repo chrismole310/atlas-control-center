@@ -66,6 +66,8 @@ def generate_export_package(book_id: int) -> str:
         if not book:
             raise ValueError(f"Book {book_id} not found")
         book = dict(book)
+        if not book.get("slug"):
+            raise ValueError(f"Book {book_id} has no slug set")
 
         ebooks = conn.execute(
             "SELECT * FROM pub_ebook_versions WHERE book_id=?", (book_id,)
@@ -99,17 +101,20 @@ def generate_export_package(book_id: int) -> str:
         ],
     }
 
+    files_added = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         # Add ebook files
         for fmt in ["book.epub", "book.mobi", "book.pdf"]:
             f = out_dir / fmt
             if f.exists():
                 zf.write(f, fmt)
+                files_added += 1
 
         # Add audiobook
         m4b = out_dir / "audiobook.m4b"
         if m4b.exists():
             zf.write(m4b, "audiobook.m4b")
+            files_added += 1
 
         # Add cover art
         cover = out_dir / "cover.jpg"
@@ -120,5 +125,7 @@ def generate_export_package(book_id: int) -> str:
         zf.writestr("metadata.json", json.dumps(metadata, indent=2))
         zf.writestr("UPLOAD-INSTRUCTIONS.txt", PLATFORM_INSTRUCTIONS)
 
+    if files_added == 0:
+        print(f"[Publishing] WARNING: Export for '{book['title']}' has no format files — run format_book/generate_audiobook first")
     print(f"[Publishing] Export package: {zip_path} ({zip_path.stat().st_size // 1024}KB)")
     return str(zip_path)
