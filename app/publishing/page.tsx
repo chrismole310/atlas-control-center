@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const API = "http://localhost:8000/api/v1/publishing";
 
@@ -71,6 +71,14 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function StatusPipeline({ status }: { status: string }) {
+  if (status === "failed") {
+    return (
+      <div className="flex items-center gap-1 mt-2">
+        <div className="w-2 h-2 rounded-full bg-red-600" />
+        <span className="text-xs text-red-400">Failed — check backend logs</span>
+      </div>
+    );
+  }
   const activeIdx = STATUS_STEPS.indexOf(
     status.replace("formatting", "uploaded").replace("generating_audio", "formatted").replace("publishing", "audio_ready")
   );
@@ -109,6 +117,7 @@ export default function PublishingPage() {
   const [processingAll, setProcessingAll] = useState(false);
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -129,6 +138,12 @@ export default function PublishingPage() {
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const handleScan = async () => {
     setScanning(true);
     try {
@@ -137,6 +152,8 @@ export default function PublishingPage() {
         const data = await res.json();
         if (data.count > 0) await fetchBooks();
         else setError(`No new RTF files found in publishing/manuscripts/`);
+      } else {
+        setError(`Scan failed (HTTP ${res.status}).`);
       }
     } catch { setError("Scan failed."); }
     finally { setScanning(false); }
@@ -148,7 +165,7 @@ export default function PublishingPage() {
       const res = await fetch(`${API}/books/${bookId}/${action}`, { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setError(null);
-      setTimeout(fetchBooks, 2000);
+      timeoutRef.current = setTimeout(fetchBooks, 2000);
     } catch {
       setError(`${label} failed for book ${bookId}.`);
     } finally {
@@ -159,9 +176,14 @@ export default function PublishingPage() {
   const handleProcessAll = async () => {
     setProcessingAll(true);
     try {
-      await fetch(`${API}/process-all`, { method: "POST" });
-      setTimeout(() => { fetchBooks(); setProcessingAll(false); }, 3000);
-    } catch { setProcessingAll(false); }
+      const res = await fetch(`${API}/process-all`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      timeoutRef.current = setTimeout(fetchBooks, 3000);
+    } catch {
+      setError("Process All failed.");
+    } finally {
+      setProcessingAll(false);
+    }
   };
 
   return (
@@ -278,7 +300,7 @@ export default function PublishingPage() {
                         {(book.ebooks.length > 0 || book.audiobooks.length > 0) && (
                           <div className="flex gap-1 mt-2 flex-wrap">
                             {book.ebooks.map(e => <FormatBadge key={e.format} format={e.format} />)}
-                            {book.audiobooks.map(() => <FormatBadge key="m4b" format="m4b" />)}
+                            {book.audiobooks.map((_ab, idx) => <FormatBadge key={`m4b-${idx}`} format="m4b" />)}
                           </div>
                         )}
                         <StatusPipeline status={book.status} />
