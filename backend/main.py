@@ -65,6 +65,7 @@ from auth import (
     get_current_active_user, require_role, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from fastcash_routes import register_routes
+from publishing_routes import register_routes as register_publishing_routes
 
 # Initialize FastAPI
 app = FastAPI(title="ATLAS CONTROL CENTER", version="2.0.0")
@@ -79,6 +80,7 @@ app.add_middleware(
 )
 
 register_routes(app)
+register_publishing_routes(app)
 
 # WebSocket connection manager
 class ConnectionManager:
@@ -170,6 +172,11 @@ async def startup_event():
     from fastcash.database import init_db as fastcash_init_db
     fastcash_init_db()
     print("[FastCash] DB initialized.")
+
+    # Initialize Publishing DB
+    from publishing.database import init_db as publishing_init_db
+    publishing_init_db()
+    print("[Publishing] DB initialized.")
 
     # Schedule 2-hour scrape loop
     async def _fastcash_scrape_loop():
