@@ -14,6 +14,11 @@ if str(_REPO) not in sys.path:
 from fastcash.database import get_jobs, get_stats, get_conn, init_db
 from fastcash.scraper import run_full_scrape, run_quick_scrape
 from fastcash.atlas_worker import generate_proposal
+from fastcash.database import (
+    get_trending_skills, get_market_opportunities,
+    get_top_performers, get_market_demand,
+)
+from fastcash.market_scraper import run_market_intelligence_scrape
 
 
 class ApplyRequest(BaseModel):
@@ -108,3 +113,118 @@ def register_routes(app):
                 "SELECT COALESCE(SUM(amount),0) FROM fastcash_earnings"
             ).fetchone()[0]
         return {"earnings": rows, "total": round(total, 2)}
+
+    # ── Market Intelligence routes ──────────────────────────────────────────
+
+    @app.get("/api/v1/fastcash/market/overview")
+    def market_overview():
+        init_db()
+        with get_conn() as conn:
+            total = conn.execute("SELECT COUNT(*) FROM fastcash_jobs").fetchone()[0]
+            last_scraped = conn.execute(
+                "SELECT MAX(scraped_at) FROM trending_skills"
+            ).fetchone()[0]
+        return {
+            "total_analyzed": total,
+            "last_scraped": last_scraped,
+            "has_data": last_scraped is not None,
+            "top_skills": get_trending_skills(5),
+            "top_opportunities": get_market_opportunities(5),
+        }
+
+    @app.get("/api/v1/fastcash/market/demand")
+    def market_demand_route(category: Optional[str] = None):
+        init_db()
+        return {"demand": get_market_demand(category=category)}
+
+    @app.get("/api/v1/fastcash/market/pricing")
+    def market_pricing(category: Optional[str] = None):
+        init_db()
+        performers = get_top_performers(category=category)
+        avg_market = (
+            round(sum(p["rate_per_hour"] for p in performers) / len(performers), 2)
+            if performers else 0
+        )
+        return {
+            "top_performers": performers,
+            "market_avg_rate": avg_market,
+            "your_rate": 150,
+        }
+
+    @app.get("/api/v1/fastcash/market/skills")
+    def market_skills():
+        init_db()
+        return {"skills": get_trending_skills(20)}
+
+    @app.get("/api/v1/fastcash/market/opportunities")
+    def market_opportunities_route():
+        init_db()
+        return {"opportunities": get_market_opportunities(10)}
+
+    @app.get("/api/v1/fastcash/market/competitors")
+    def market_competitors(category: Optional[str] = None, limit: int = 20):
+        init_db()
+        return {"competitors": get_top_performers(category=category, limit=limit)}
+
+    @app.post("/api/v1/fastcash/market/analyze-me")
+    def market_analyze_me():
+        """Claude Haiku positioning analysis."""
+        import os
+        init_db()
+        skills = get_trending_skills(8)
+        opps = get_market_opportunities(5)
+        if not skills:
+            return {
+                "analysis": "No market data yet. Click 'Analyze Market' first.",
+                "top_skills": [],
+                "top_opportunities": [],
+            }
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return {
+                "analysis": "Set ANTHROPIC_API_KEY to enable AI analysis.",
+                "top_skills": skills,
+                "top_opportunities": opps,
+            }
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
+            skill_lines = "\n".join(
+                f"- {s['skill_name']}: demand {s['demand_score']}/10, "
+                f"opportunity {s['opportunity_score']}/10, pay +${s['avg_pay_premium']:+.0f}/hr"
+                for s in skills
+            )
+            opp_lines = "\n".join(
+                f"- {o['service_type']} ({o['opportunity_type']}): ${o['pay_potential']:.0f}/hr potential"
+                for o in opps
+            )
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=600,
+                messages=[{"role": "user", "content": f"""Market data from live job postings:
+
+Top skills by opportunity:
+{skill_lines}
+
+Top opportunities:
+{opp_lines}
+
+Profile: Christopher Mole, 14-time Emmy Award winner, 25 years broadcast production, ESPN/Netflix/HBO.
+
+Give exactly 4 bullet points:
+1. Rate recommendation ($XXX/hr based on Emmy credentials vs market data)
+2. Best opportunity to pursue RIGHT NOW (specific service type, why)
+3. One skill to add for highest pay premium ROI
+4. One-sentence positioning statement for proposals
+
+Be specific with numbers. 2 sentences max per bullet."""}],
+            )
+            analysis = msg.content[0].text if msg.content else "Analysis unavailable."
+        except Exception as e:
+            analysis = f"AI analysis error: {e}"
+        return {"analysis": analysis, "top_skills": skills, "top_opportunities": opps}
+
+    @app.post("/api/v1/fastcash/market/scrape")
+    async def market_scrape(background_tasks: BackgroundTasks):
+        background_tasks.add_task(run_market_intelligence_scrape)
+        return {"status": "market intelligence scrape started"}
