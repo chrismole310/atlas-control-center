@@ -27,7 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import asyncio
 import json
@@ -188,17 +188,19 @@ async def startup_event():
     from fastcash.market_scraper import run_market_intelligence_scrape as _market_scrape
 
     async def _market_intelligence_loop():
-        from datetime import datetime as _dt, timedelta as _td
         while True:
-            now = _dt.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
             next_3am = now.replace(hour=3, minute=0, second=0, microsecond=0)
             if next_3am <= now:
-                next_3am += _td(days=1)
+                next_3am += timedelta(days=1)
             secs = (next_3am - now).total_seconds()
             print(f"[Market] Next analysis in {int(secs / 3600)}h {int((secs % 3600) / 60)}m")
-            await asyncio.sleep(secs)
             try:
-                await asyncio.get_event_loop().run_in_executor(None, _market_scrape)
+                await asyncio.sleep(secs)
+                await asyncio.get_running_loop().run_in_executor(None, _market_scrape)
+            except asyncio.CancelledError:
+                print("[Market] Intelligence loop cancelled.")
+                raise
             except Exception as e:
                 print(f"[Market] Daily scrape error: {e}")
 
