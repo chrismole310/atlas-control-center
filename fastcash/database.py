@@ -78,6 +78,74 @@ def init_db():
             earned_at     TEXT DEFAULT (datetime('now')),
             notes         TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS market_demand (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform      TEXT,
+            category      TEXT,
+            service_type  TEXT,
+            num_requests  INTEGER DEFAULT 0,
+            avg_budget    REAL DEFAULT 0,
+            min_budget    REAL DEFAULT 0,
+            max_budget    REAL DEFAULT 0,
+            avg_offers    INTEGER DEFAULT 0,
+            week_start    TEXT,
+            scraped_at    TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS market_supply (
+            id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform           TEXT,
+            category           TEXT,
+            service_type       TEXT,
+            num_sellers        INTEGER DEFAULT 0,
+            avg_price          REAL DEFAULT 0,
+            top_performer_rate REAL DEFAULT 0,
+            competition_level  TEXT DEFAULT 'medium',
+            week_start         TEXT,
+            scraped_at         TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS trending_skills (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            skill_name        TEXT,
+            category          TEXT DEFAULT 'video-production',
+            mention_count     INTEGER DEFAULT 0,
+            avg_pay_premium   REAL DEFAULT 0,
+            growth_rate       REAL DEFAULT 0,
+            demand_score      INTEGER DEFAULT 5,
+            competition_score INTEGER DEFAULT 5,
+            opportunity_score INTEGER DEFAULT 5,
+            week_start        TEXT,
+            scraped_at        TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS top_performers (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform       TEXT,
+            username       TEXT,
+            category       TEXT,
+            rate_per_hour  REAL DEFAULT 0,
+            total_earned   TEXT,
+            jobs_completed INTEGER DEFAULT 0,
+            success_rate   REAL DEFAULT 0,
+            skills         TEXT DEFAULT '[]',
+            scraped_at     TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS market_opportunities (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            category         TEXT,
+            service_type     TEXT,
+            opportunity_type TEXT,
+            description      TEXT,
+            demand_score     INTEGER DEFAULT 5,
+            competition_score INTEGER DEFAULT 5,
+            pay_potential    REAL DEFAULT 0,
+            barrier_to_entry TEXT DEFAULT 'medium',
+            recommendation   TEXT,
+            identified_at    TEXT DEFAULT (datetime('now'))
+        );
         """)
     print("[FastCash] DB initialized.")
 
@@ -143,3 +211,43 @@ def get_stats() -> dict:
             "total_earned": round(earned, 2),
             "tasks_ready": tasks_ready,
         }
+
+
+def get_trending_skills(limit: int = 20) -> list:
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM trending_skills ORDER BY opportunity_score DESC LIMIT ?",
+            (limit,)
+        ).fetchall()]
+
+
+def get_market_opportunities(limit: int = 10) -> list:
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM market_opportunities ORDER BY demand_score DESC LIMIT ?",
+            (limit,)
+        ).fetchall()]
+
+
+def get_top_performers(category: str = None, limit: int = 20) -> list:
+    with get_conn() as conn:
+        q = "SELECT * FROM top_performers"
+        params: list = []
+        if category:
+            q += " WHERE category = ?"
+            params.append(category)
+        q += " ORDER BY rate_per_hour DESC LIMIT ?"
+        params.append(limit)
+        return [dict(r) for r in conn.execute(q, params).fetchall()]
+
+
+def get_market_demand(category: str = None, limit: int = 20) -> list:
+    with get_conn() as conn:
+        q = "SELECT * FROM market_demand"
+        params: list = []
+        if category:
+            q += " WHERE category = ?"
+            params.append(category)
+        q += " ORDER BY num_requests DESC LIMIT ?"
+        params.append(limit)
+        return [dict(r) for r in conn.execute(q, params).fetchall()]
