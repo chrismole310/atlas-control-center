@@ -1,0 +1,222 @@
+"""Atlas Publishing Engine — Piper TTS audiobook generator → M4B."""
+import json
+import re
+import subprocess
+import wave
+from pathlib import Path
+
+from publishing.database import get_conn, init_db
+
+_REPO = Path(__file__).parent.parent
+_VOICES_DIR = _REPO / "publishing" / "voices"
+_OUTPUT = _REPO / "publishing" / "output"
+
+DEFAULT_VOICE = "en_US-lessac-medium"
+
+
+def _detect_chapters_from_text(text: str) -> list[tuple[str, str]]:
+    """
+    Split plain text into (chapter_title, chapter_text) pairs.
+    Detects patterns: 'Chapter 1', 'CHAPTER ONE', 'Part I', etc.
+    Falls back to splitting into equal chunks if no chapters found.
+    """
+    pattern = re.compile(
+        r'^((?:Chapter|CHAPTER|Part|PART)\s+[\w\s]+|[A-Z][A-Z\s]{3,30})$',
+        re.MULTILINE
+    )
+    matches = list(pattern.finditer(text))
+
+    if not matches:
+        # No chapter headings — split into 5000-word chunks
+        words = text.split()
+        chunk_size = 5000
+        chunks = []
+        for i in range(0, len(words), chunk_size):
+            chunk_text = ' '.join(words[i:i + chunk_size])
+            chunks.append((f"Chapter {i // chunk_size + 1}", chunk_text))
+        return chunks
+
+    chapters = []
+    for i, match in enumerate(matches):
+        title = match.group(0).strip()
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        body = text[start:end].strip()
+        if body:
+            chapters.append((title, body))
+    return chapters
+
+
+def _text_to_wav(text: str, output_path: Path, voice: str = DEFAULT_VOICE) -> None:
+    """Convert text to WAV using Piper TTS."""
+    model_path = _VOICES_DIR / f"{voice}.onnx"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Voice model not found: {model_path}")
+
+    try:
+        from piper import PiperVoice
+        piper_voice = PiperVoice.load(str(model_path))
+        sample_rate = piper_voice.config.sample_rate
+
+        with wave.open(str(output_path), "w") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(sample_rate)
+            for chunk in piper_voice.synthesize(text):
+                wav_file.writeframes(chunk.audio_int16_bytes)
+    except ImportError:
+        raise RuntimeError("piper-tts not installed: pip install piper-tts")
+
+
+def _wav_to_m4b(wav_files: list[Path], output_path: Path,
+                title: str, author: str, cover_path: Path = None,
+                chapter_titles: list[str] = None) -> None:
+    """Assemble multiple WAV files into a single M4B with chapter markers."""
+    # Step 1: Write concat file
+    concat_file = output_path.parent / "concat.txt"
+    with open(concat_file, "w") as f:
+        for wav in wav_files:
+            f.write(f"file '{wav.resolve()}'\n")
+
+    # Step 2: Concatenate all WAVs
+    combined_wav = output_path.parent / "combined.wav"
+    subprocess.run([
+        "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+        "-i", str(concat_file), "-c", "copy", str(combined_wav)
+    ], check=True, capture_output=True)
+
+    # Step 3: Get durations for chapter markers
+    ffmpeg_meta = output_path.parent / "chapters.txt"
+    chapter_markers = [";FFMETADATA1\n", f"title={title}\n", f"artist={author}\n\n"]
+
+    if chapter_titles and len(chapter_titles) == len(wav_files):
+        # Get duration of each WAV for accurate chapter markers
+        cursor_ms = 0
+        for i, (wav, ch_title) in enumerate(zip(wav_files, chapter_titles)):
+            result = subprocess.run([
+                "ffprobe", "-v", "quiet", "-print_format", "json",
+                "-show_streams", str(wav)
+            ], capture_output=True, text=True)
+            info = json.loads(result.stdout)
+            duration_s = float(info["streams"][0]["duration"])
+            duration_ms = int(duration_s * 1000)
+
+            chapter_markers.append("[CHAPTER]\n")
+            chapter_markers.append("TIMEBASE=1/1000\n")
+            chapter_markers.append(f"START={cursor_ms}\n")
+            chapter_markers.append(f"END={cursor_ms + duration_ms}\n")
+            chapter_markers.append(f"title={ch_title}\n\n")
+            cursor_ms += duration_ms
+
+    with open(ffmpeg_meta, "w") as f:
+        f.writelines(chapter_markers)
+
+    # Step 4: Build ffmpeg command for M4B
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(combined_wav),
+        "-i", str(ffmpeg_meta),
+        "-map_metadata", "1",
+    ]
+    if cover_path and cover_path.exists():
+        cmd += ["-i", str(cover_path), "-map", "0:a", "-map", "2:v",
+                "-c:v", "copy", "-disposition:v", "attached_pic"]
+    else:
+        cmd += ["-map", "0:a"]
+
+    cmd += [
+        "-c:a", "aac", "-b:a", "64k", "-ar", "44100",
+        "-metadata", f"title={title}",
+        "-metadata", f"artist={author}",
+        "-metadata", f"album={title}",
+        "-metadata", "genre=Audiobook",
+        str(output_path)
+    ]
+    subprocess.run(cmd, check=True, capture_output=True)
+
+    # Cleanup temp files
+    concat_file.unlink(missing_ok=True)
+    combined_wav.unlink(missing_ok=True)
+    ffmpeg_meta.unlink(missing_ok=True)
+
+
+def generate_audiobook(book_id: int, voice: str = DEFAULT_VOICE) -> dict:
+    """
+    Generate M4B audiobook from manuscript text using Piper TTS.
+    Returns dict with file path and duration, or raises on error.
+    """
+    init_db()
+
+    with get_conn() as conn:
+        book = conn.execute("SELECT * FROM pub_books WHERE id=?", (book_id,)).fetchone()
+        if not book:
+            raise ValueError(f"Book {book_id} not found")
+        book = dict(book)
+        conn.execute("UPDATE pub_books SET status='generating_audio' WHERE id=?", (book_id,))
+
+    if not book.get("manuscript_path"):
+        raise ValueError(f"Book {book_id} has no manuscript_path set")
+    manuscript = Path(book["manuscript_path"])
+    if not manuscript.exists():
+        raise FileNotFoundError(f"Manuscript not found: {manuscript}")
+
+    if not book.get("slug"):
+        raise ValueError(f"Book {book_id} has no slug set")
+
+    out_dir = _OUTPUT / book["slug"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    audio_dir = out_dir / "audio_chapters"
+    audio_dir.mkdir(exist_ok=True)
+
+    print(f"[Publishing] Generating audiobook for '{book['title']}'...")
+
+    # Extract plain text from manuscript (via pandoc)
+    txt_path = out_dir / "manuscript.txt"
+    subprocess.run([
+        "pandoc", str(manuscript), "-o", str(txt_path),
+        "--to", "plain", "--wrap=none"
+    ], check=True, capture_output=True)
+    text = txt_path.read_text(encoding="utf-8", errors="replace")
+
+    # Detect chapters
+    chapters = _detect_chapters_from_text(text)
+    print(f"[Publishing] Found {len(chapters)} chapters")
+
+    # Generate audio per chapter
+    wav_files = []
+    chapter_titles = []
+    for i, (ch_title, ch_text) in enumerate(chapters):
+        wav_path = audio_dir / f"chapter_{i+1:03d}.wav"
+        print(f"[Publishing] TTS chapter {i+1}/{len(chapters)}: {ch_title[:40]}")
+        _text_to_wav(ch_text, wav_path, voice=voice)
+        wav_files.append(wav_path)
+        chapter_titles.append(ch_title)
+
+    # Assemble M4B
+    m4b_path = out_dir / "audiobook.m4b"
+    cover_path = Path(book["cover_art_path"]) if book.get("cover_art_path") else None
+    _wav_to_m4b(wav_files, m4b_path, book["title"], book["author"],
+                cover_path=cover_path, chapter_titles=chapter_titles)
+
+    # Get duration
+    result = subprocess.run([
+        "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+        "-print_format", "json", str(m4b_path)
+    ], capture_output=True, text=True)
+    duration_s = float(json.loads(result.stdout)["format"]["duration"])
+    duration_min = int(duration_s / 60)
+
+    file_size = m4b_path.stat().st_size
+
+    with get_conn() as conn:
+        conn.execute(
+            "DELETE FROM pub_audiobook_versions WHERE book_id=?", (book_id,)
+        )
+        conn.execute(
+            "INSERT INTO pub_audiobook_versions (book_id, voice, duration_minutes, file_path, file_size) VALUES (?,?,?,?,?)",
+            (book_id, voice, duration_min, str(m4b_path), file_size)
+        )
+        conn.execute("UPDATE pub_books SET status='audio_ready' WHERE id=?", (book_id,))
+
+    print(f"[Publishing] Audiobook complete: {m4b_path} ({duration_min} min)")
+    return {"m4b": str(m4b_path), "duration_minutes": duration_min, "file_size": file_size}
