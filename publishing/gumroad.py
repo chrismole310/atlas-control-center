@@ -69,6 +69,8 @@ Keep it under 350 words. No markdown headers."""}],
 
 def _make_ebook_bundle(book: dict, out_dir: Path) -> "Path | None":
     """Zip EPUB + MOBI + PDF into a single bundle for Gumroad."""
+    if not out_dir.exists():
+        return None
     bundle_path = out_dir / "ebook-bundle.zip"
     formats_added = 0
     with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -92,6 +94,8 @@ def publish_ebook_to_gumroad(book_id: int, price: float = 4.99) -> dict:
         if not book:
             raise ValueError(f"Book {book_id} not found")
         book = dict(book)
+        if not book.get("slug"):
+            raise ValueError(f"Book {book_id} has no slug set")
 
         # Check if already published
         existing = conn.execute(
@@ -117,12 +121,24 @@ def publish_ebook_to_gumroad(book_id: int, price: float = 4.99) -> dict:
             "name": f"{book['title']} — Ebook Bundle (EPUB + MOBI + PDF)",
             "description": description,
             "price": int(price * 100),
-            "published": True,
-            "require_shipping": False,
+            "published": "true",
+            "require_shipping": "false",
         })
         product_id = product["product"]["id"]
         store_url = product["product"].get("short_url", f"https://gumroad.com/l/{product_id}")
-        _gumroad_upload_file(product_id, bundle_path, "application/zip")
+        try:
+            _gumroad_upload_file(product_id, bundle_path, "application/zip")
+        except Exception as upload_err:
+            try:
+                requests.delete(
+                    f"{_BASE_URL}/products/{product_id}",
+                    params={"access_token": _token()},
+                    timeout=15,
+                )
+                print(f"[Publishing] Rolled back orphaned Gumroad product {product_id}")
+            except Exception as delete_err:
+                print(f"[Publishing] CRITICAL: orphaned Gumroad product {product_id} — delete manually. ({delete_err})")
+            raise upload_err
         print(f"[Publishing] Ebook listed on Gumroad: {store_url}")
 
     with get_conn() as conn:
@@ -144,6 +160,8 @@ def publish_audiobook_to_gumroad(book_id: int, price: float = 14.99) -> dict:
         if not book:
             raise ValueError(f"Book {book_id} not found")
         book = dict(book)
+        if not book.get("slug"):
+            raise ValueError(f"Book {book_id} has no slug set")
 
         existing = conn.execute(
             "SELECT * FROM pub_publications WHERE book_id=? AND platform='gumroad' AND format='audiobook'",
@@ -163,7 +181,7 @@ def publish_audiobook_to_gumroad(book_id: int, price: float = 14.99) -> dict:
         ).fetchone()
 
     duration_str = ""
-    if audiobook_entry:
+    if audiobook_entry and audiobook_entry["duration_minutes"] is not None:
         hrs = audiobook_entry["duration_minutes"] // 60
         mins = audiobook_entry["duration_minutes"] % 60
         duration_str = f" | Runtime: {hrs}h {mins}m"
@@ -179,12 +197,24 @@ def publish_audiobook_to_gumroad(book_id: int, price: float = 14.99) -> dict:
             "name": f"{book['title']} — Audiobook (M4B)",
             "description": description,
             "price": int(price * 100),
-            "published": True,
-            "require_shipping": False,
+            "published": "true",
+            "require_shipping": "false",
         })
         product_id = product["product"]["id"]
         store_url = product["product"].get("short_url", f"https://gumroad.com/l/{product_id}")
-        _gumroad_upload_file(product_id, m4b_path, "audio/x-m4b")
+        try:
+            _gumroad_upload_file(product_id, m4b_path, "audio/x-m4b")
+        except Exception as upload_err:
+            try:
+                requests.delete(
+                    f"{_BASE_URL}/products/{product_id}",
+                    params={"access_token": _token()},
+                    timeout=15,
+                )
+                print(f"[Publishing] Rolled back orphaned Gumroad product {product_id}")
+            except Exception as delete_err:
+                print(f"[Publishing] CRITICAL: orphaned Gumroad product {product_id} — delete manually. ({delete_err})")
+            raise upload_err
         print(f"[Publishing] Audiobook listed on Gumroad: {store_url}")
 
     with get_conn() as conn:
