@@ -1,4 +1,5 @@
 """FastCash — Job scoring algorithm (1-10 composite score)."""
+import re
 
 USER_SKILLS = [
     "video editing", "post-production", "documentary", "film", "tv production",
@@ -40,7 +41,6 @@ def _pay_score(pay_min: float, pay_max: float, pay_rate: str) -> float:
     if not effective:
         rate = (pay_rate or "").lower()
         if "$" in rate:
-            import re
             nums = re.findall(r"\d+\.?\d*", rate)
             if nums:
                 effective = float(nums[-1])
@@ -61,12 +61,12 @@ def _pay_score(pay_min: float, pay_max: float, pay_rate: str) -> float:
 
 
 def _skill_match_score(title: str, description: str, skills: list) -> float:
-    text = f"{title} {description} {' '.join(skills)}".lower()
+    text = f"{title or ''} {description or ''} {' '.join(skills or [])}".lower()
     base = 0
     for skill, boost in SKILL_BOOSTS.items():
         if skill in text:
             base += boost
-    return min(10.0, max(1.0, base))
+    return min(10.0, max(1.0, base if base > 0 else 5.0))
 
 
 def _apply_difficulty_score(description: str, source: str) -> float:
