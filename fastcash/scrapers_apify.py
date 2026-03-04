@@ -1,11 +1,10 @@
 """FastCash — Apify-based scrapers for Upwork, Indeed, LinkedIn."""
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "intelligence"))
 
 from apify_client import run_actor
-from job_scorer import score_job
+from .job_scorer import score_job
 
 ACTORS = {
     "upwork":   "upwork-vibe/upwork-scraper",

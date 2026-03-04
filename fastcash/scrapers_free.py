@@ -1,11 +1,7 @@
 """FastCash — Free API scrapers: RemoteOK (JSON) + WeWorkRemotely (RSS)."""
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent))
-
 import httpx
 import feedparser
-from job_scorer import score_job
+from .job_scorer import score_job
 
 REMOTEOK_URL = "https://remoteok.com/api"
 WWR_FEEDS = [

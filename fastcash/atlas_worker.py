@@ -13,8 +13,7 @@ from dotenv import load_dotenv
 
 load_dotenv(str(Path(__file__).parent.parent / "backend" / ".env"))
 
-sys.path.insert(0, str(Path(__file__).parent))
-from database import get_conn, init_db
+from .database import get_conn, init_db
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")

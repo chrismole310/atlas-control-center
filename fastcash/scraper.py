@@ -1,12 +1,9 @@
 """FastCash — Main scrape orchestrator."""
-import sys
-from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).parent))
-from database import init_db, upsert_job, get_stats
-from scrapers_free import run_free_scrapers
-from scrapers_apify import run_apify_scrapers
+from .database import init_db, upsert_job, get_stats
+from .scrapers_free import run_free_scrapers
+from .scrapers_apify import run_apify_scrapers
 
 
 def run_full_scrape(include_apify: bool = True) -> dict:
