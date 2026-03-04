@@ -19,6 +19,7 @@ from fastcash.database import (
     get_top_performers, get_market_demand,
 )
 from fastcash.market_scraper import run_market_intelligence_scrape
+import os
 
 
 class ApplyRequest(BaseModel):
@@ -120,14 +121,14 @@ def register_routes(app):
     def market_overview():
         init_db()
         with get_conn() as conn:
-            total = conn.execute("SELECT COUNT(*) FROM fastcash_jobs").fetchone()[0]
-            last_scraped = conn.execute(
+            total_jobs = conn.execute("SELECT COUNT(*) FROM fastcash_jobs").fetchone()[0]
+            market_updated = conn.execute(
                 "SELECT MAX(scraped_at) FROM trending_skills"
             ).fetchone()[0]
         return {
-            "total_analyzed": total,
-            "last_scraped": last_scraped,
-            "has_data": last_scraped is not None,
+            "total_jobs": total_jobs,
+            "last_scraped": market_updated,
+            "has_data": market_updated is not None,
             "top_skills": get_trending_skills(5),
             "top_opportunities": get_market_opportunities(5),
         }
@@ -135,41 +136,55 @@ def register_routes(app):
     @app.get("/api/v1/fastcash/market/demand")
     def market_demand_route(category: Optional[str] = None):
         init_db()
-        return {"demand": get_market_demand(category=category)}
+        try:
+            return {"demand": get_market_demand(category=category)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     @app.get("/api/v1/fastcash/market/pricing")
     def market_pricing(category: Optional[str] = None):
         init_db()
-        performers = get_top_performers(category=category)
-        avg_market = (
-            round(sum(p["rate_per_hour"] for p in performers) / len(performers), 2)
-            if performers else 0
-        )
-        return {
-            "top_performers": performers,
-            "market_avg_rate": avg_market,
-            "your_rate": 150,
-        }
+        try:
+            performers = get_top_performers(category=category)
+            avg_market = (
+                round(sum(p.get("rate_per_hour") or 0 for p in performers) / len(performers), 2)
+                if performers else 0
+            )
+            return {
+                "top_performers": performers,
+                "market_avg_rate": avg_market,
+                "your_rate": 150,
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     @app.get("/api/v1/fastcash/market/skills")
     def market_skills():
         init_db()
-        return {"skills": get_trending_skills(20)}
+        try:
+            return {"skills": get_trending_skills(20)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     @app.get("/api/v1/fastcash/market/opportunities")
     def market_opportunities_route():
         init_db()
-        return {"opportunities": get_market_opportunities(10)}
+        try:
+            return {"opportunities": get_market_opportunities(10)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     @app.get("/api/v1/fastcash/market/competitors")
     def market_competitors(category: Optional[str] = None, limit: int = 20):
         init_db()
-        return {"competitors": get_top_performers(category=category, limit=limit)}
+        try:
+            return {"competitors": get_top_performers(category=category, limit=limit)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     @app.post("/api/v1/fastcash/market/analyze-me")
     def market_analyze_me():
         """Claude Haiku positioning analysis."""
-        import os
         init_db()
         skills = get_trending_skills(8)
         opps = get_market_opportunities(5)
@@ -187,7 +202,7 @@ def register_routes(app):
                 "top_opportunities": opps,
             }
         try:
-            import anthropic
+            import anthropic  # optional dependency — handled gracefully below if absent
             client = anthropic.Anthropic(api_key=api_key)
             skill_lines = "\n".join(
                 f"- {s['skill_name']}: demand {s['demand_score']}/10, "
