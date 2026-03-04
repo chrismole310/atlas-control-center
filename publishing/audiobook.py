@@ -3,7 +3,7 @@ import json
 import re
 import subprocess
 import wave
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from publishing.database import get_conn, init_db
@@ -30,7 +30,7 @@ def _detect_chapters_from_text(text: str) -> list[tuple[str, str]]:
     )
     matches = list(pattern.finditer(text))
 
-    # Filter out front matter matches (body < 200 words = likely title/TOC/blurb)
+    # Filter out front matter matches (body < 500 words = likely title/TOC/blurb)
     real_chapters = []
     for i, match in enumerate(matches):
         start = match.end()
@@ -215,8 +215,11 @@ def generate_audiobook(book_id: int, voice: str = DEFAULT_VOICE) -> dict:
                  "-show_streams", str(wav_path)],
                 capture_output=True, text=True, check=True
             )
-            info = json.loads(result.stdout)
-            dur_s = float(info["streams"][0]["duration"])
+            try:
+                info = json.loads(result.stdout)
+                dur_s = float(info["streams"][0]["duration"])
+            except (json.JSONDecodeError, KeyError, IndexError, ValueError) as e:
+                raise RuntimeError(f"ffprobe failed to parse duration for {wav_path}: {e}") from e
             chapter_data.append({
                 "index": i,
                 "title": ch_title,
@@ -234,7 +237,7 @@ def generate_audiobook(book_id: int, voice: str = DEFAULT_VOICE) -> dict:
             "book_title": book["title"],
             "voice": voice,
             "total_duration_seconds": round(cursor_s, 3),
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "chapters": chapter_data,
         }
         transcript_path = out_dir / "transcript.json"
