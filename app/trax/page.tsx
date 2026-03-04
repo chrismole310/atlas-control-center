@@ -188,9 +188,7 @@ function TradeForm({ onTrade, prices }: { onTrade: () => void; prices: Prices | 
     setLoading(true)
     setResult(null)
 
-    const token = localStorage.getItem("trax_token")
     const headers: Record<string, string> = { "Content-Type": "application/json" }
-    if (token) headers["Authorization"] = `Bearer ${token}`
 
     const body: Record<string, unknown> = { symbol, action }
     if (action === "buy") body.usd_amount = parseFloat(amount)
@@ -333,9 +331,7 @@ export default function TraxPage() {
     try {
       const [portfolioRes, historyRes, arbitrageRes] = await Promise.all([
         fetch(`${API}/api/v1/paper/portfolio`),
-        fetch(`${API}/api/v1/paper/history?limit=20`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("trax_token") ?? ""}` }
-        }),
+        fetch(`${API}/api/v1/paper/history?limit=20`),
         fetch(`${API}/api/v1/market/arbitrage`),
       ])
 

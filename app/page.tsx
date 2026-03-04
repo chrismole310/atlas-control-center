@@ -36,6 +36,46 @@ const portals = [
     href: "/trax"
   },
   {
+    id: "congress",
+    name: "Congress Tracker",
+    description: "Copy insider political trades",
+    icon: BarChart3,
+    gradient: "from-blue-500 to-purple-600",
+    status: "active",
+    revenue: "Alpha Signals",
+    href: "/congress"
+  },
+  {
+    id: "settlements",
+    name: "Settlement Finder",
+    description: "Auto-file class action claims",
+    icon: ArrowUpRight,
+    gradient: "from-green-500 to-teal-600",
+    status: "active",
+    revenue: "Passive Income",
+    href: "/settlements"
+  },
+  {
+    id: "housing",
+    name: "Housing Lottery",
+    description: "NYC affordable housing tracker",
+    icon: Clock,
+    gradient: "from-teal-500 to-cyan-600",
+    status: "active",
+    revenue: "Cost Reduction",
+    href: "/housing"
+  },
+  {
+    id: "contracts",
+    name: "Gov Contracts",
+    description: "Trade on federal award announcements",
+    icon: TrendingUp,
+    gradient: "from-orange-500 to-red-600",
+    status: "active",
+    revenue: "Trade Signals",
+    href: "/contracts"
+  },
+  {
     id: "ugc-studio",
     name: "UGC Studio",
     description: "AI-powered content creation",
