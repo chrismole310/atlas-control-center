@@ -1,15 +1,25 @@
 """FastCash — SQLite database models and helpers."""
 import sqlite3
+import json
+from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime
 
 DB_PATH = Path(__file__).parent.parent / "backend" / "trax.db"
 
 
+@contextmanager
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db():
@@ -91,13 +101,8 @@ def get_jobs(tab: str = None, limit: int = 50, offset: int = 0,
 def upsert_job(job: dict) -> bool:
     """Insert job if URL not seen before. Returns True if new."""
     with get_conn() as conn:
-        existing = conn.execute(
-            "SELECT id FROM fastcash_jobs WHERE url = ?", (job["url"],)
-        ).fetchone()
-        if existing:
-            return False
-        conn.execute("""
-            INSERT INTO fastcash_jobs
+        cur = conn.execute("""
+            INSERT OR IGNORE INTO fastcash_jobs
             (title, company, source, url, pay_rate, pay_min, pay_max,
              remote, start_date, payment_speed, skills, description, score, tab)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -112,12 +117,12 @@ def upsert_job(job: dict) -> bool:
             1 if job.get("remote", True) else 0,
             job.get("start_date", ""),
             job.get("payment_speed", ""),
-            str(job.get("skills", [])),
+            json.dumps(job.get("skills", [])),
             job.get("description", "")[:2000],
             job.get("score", 0),
             job.get("tab", "chris"),
         ))
-        return True
+        return cur.rowcount == 1
 
 
 def get_stats() -> dict:
