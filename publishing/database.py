@@ -11,7 +11,6 @@ _DB = Path(__file__).parent / "publishing.db"
 def get_conn():
     conn = sqlite3.connect(str(_DB))
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
     try:
         yield conn
         conn.commit()
@@ -24,6 +23,7 @@ def get_conn():
 
 def init_db():
     with get_conn() as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS pub_books (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
