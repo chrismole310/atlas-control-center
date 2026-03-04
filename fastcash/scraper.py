@@ -15,16 +15,22 @@ def run_full_scrape(include_apify: bool = True) -> dict:
     start = datetime.utcnow()
     all_jobs = []
 
-    print("[FastCash] Starting free scrapers...")
-    all_jobs.extend(run_free_scrapers())
+    try:
+        print("[FastCash] Starting free scrapers...")
+        all_jobs.extend(run_free_scrapers())
+    except Exception as e:
+        print(f"[FastCash] Free scraper error: {e}")
 
     if include_apify:
-        print("[FastCash] Starting Apify scrapers...")
-        all_jobs.extend(run_apify_scrapers())
+        try:
+            print("[FastCash] Starting Apify scrapers...")
+            all_jobs.extend(run_apify_scrapers())
+        except Exception as e:
+            print(f"[FastCash] Apify scraper error: {e}")
 
     new_count = sum(1 for job in all_jobs if upsert_job(job))
 
-    elapsed = (datetime.utcnow() - start).seconds
+    elapsed = int((datetime.utcnow() - start).total_seconds())
     stats = get_stats()
     result = {
         "scraped": len(all_jobs),

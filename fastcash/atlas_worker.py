@@ -33,13 +33,13 @@ def transcribe_audio(audio_url: str, task_id: int) -> str:
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY not set")
 
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
-        resp = httpx.get(audio_url, follow_redirects=True, timeout=60)
-        resp.raise_for_status()
-        f.write(resp.content)
-        tmp_path = f.name
-
+    tmp_path = None
     try:
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+            resp = httpx.get(audio_url, follow_redirects=True, timeout=60)
+            resp.raise_for_status()
+            f.write(resp.content)
+            tmp_path = f.name
         with open(tmp_path, "rb") as audio_file:
             resp = httpx.post(
                 "https://api.openai.com/v1/audio/transcriptions",
@@ -50,7 +50,6 @@ def transcribe_audio(audio_url: str, task_id: int) -> str:
             )
             resp.raise_for_status()
         transcript = resp.text.strip()
-
         with get_conn() as conn:
             conn.execute(
                 "UPDATE fastcash_tasks SET status='ready', output_text=?, completed_at=? WHERE id=?",
@@ -58,7 +57,8 @@ def transcribe_audio(audio_url: str, task_id: int) -> str:
             )
         return transcript
     finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        if tmp_path:
+            Path(tmp_path).unlink(missing_ok=True)
 
 
 def write_article(brief: str, word_count: int, task_id: int) -> str:
@@ -87,7 +87,7 @@ Return only the article text."""
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}]
     )
-    article = msg.content[0].text.strip()
+    article = msg.content[0].text.strip() if msg.content else ""
 
     with get_conn() as conn:
         conn.execute(
@@ -133,7 +133,7 @@ Return only the proposal text."""
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     )
-    return msg.content[0].text.strip()
+    return msg.content[0].text.strip() if msg.content else _fallback_proposal(job_title, job_source)
 
 
 def _fallback_proposal(job_title: str, job_source: str) -> str:
