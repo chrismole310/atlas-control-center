@@ -177,7 +177,7 @@ async def startup_event():
         while True:
             try:
                 await asyncio.sleep(7200)  # 2 hours
-                run_quick_scrape()
+                await asyncio.get_event_loop().run_in_executor(None, run_quick_scrape)
             except Exception as e:
                 print(f"[FastCash] Scrape loop error: {e}")
 
