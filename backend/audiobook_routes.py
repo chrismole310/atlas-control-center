@@ -1,9 +1,10 @@
 """Atlas Publishing Engine — Audiobook FastAPI routes."""
+import json
 import shutil
 import sys
 from pathlib import Path
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import BackgroundTasks, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 
 _REPO = Path(__file__).parent.parent
@@ -26,7 +27,7 @@ def _run_qc(audiobook_id: int) -> dict:
         ).fetchone()
 
     if not row:
-        raise HTTPException(status_code=404, detail="Audiobook not found")
+        raise ValueError(f"Audiobook {audiobook_id} not found")
 
     file_path = Path(row["file_path"])
     transcript_path = file_path.parent / "transcript.json"
@@ -127,11 +128,11 @@ def _quick_qc_status(file_path_str: str) -> str:
 
 def register_audiobook_routes(app):
     """Mount all /api/v1/audiobooks routes onto the FastAPI app."""
+    init_db()
 
     @app.get("/api/v1/audiobooks")
     def list_audiobooks():
         """List all audiobook versions with book metadata and quick QC status."""
-        init_db()
         with get_conn() as conn:
             rows = conn.execute(
                 """
@@ -162,24 +163,53 @@ def register_audiobook_routes(app):
         return {"audiobooks": result}
 
     @app.get("/api/v1/audiobooks/{audiobook_id}/stream")
-    def audiobook_stream(audiobook_id: int):
+    def audiobook_stream(audiobook_id: int, request: Request):
         """Stream the M4B file with Range request support (required for WaveSurfer.js seeking)."""
         with get_conn() as conn:
             row = conn.execute(
                 "SELECT * FROM pub_audiobook_versions WHERE id=?", (audiobook_id,)
             ).fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Audiobook not found")
+            raise HTTPException(404, "Audiobook not found")
         path = Path(row["file_path"])
         if not path.exists():
-            raise HTTPException(status_code=404, detail="Audio file not found on disk")
-        return FileResponse(str(path), media_type="audio/mp4", filename=path.name)
+            raise HTTPException(404, "Audio file not found on disk")
+
+        file_size = path.stat().st_size
+        range_header = request.headers.get("range")
+        if range_header:
+            try:
+                range_val = range_header.replace("bytes=", "")
+                start_str, end_str = range_val.split("-")
+                start = int(start_str)
+                end = int(end_str) if end_str else file_size - 1
+            except (ValueError, TypeError):
+                raise HTTPException(416, "Invalid Range header")
+            if start >= file_size or end >= file_size or start > end:
+                raise HTTPException(416, "Range Not Satisfiable")
+            chunk_size = end - start + 1
+            with open(path, "rb") as f:
+                f.seek(start)
+                data = f.read(chunk_size)
+            return Response(
+                content=data,
+                status_code=206,
+                headers={
+                    "Content-Range": f"bytes {start}-{end}/{file_size}",
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(chunk_size),
+                    "Content-Type": "audio/mp4",
+                },
+            )
+        # Full file fallback
+        return FileResponse(
+            str(path), media_type="audio/mp4", filename=path.name,
+            headers={"Accept-Ranges": "bytes"},
+        )
 
     @app.get("/api/v1/audiobooks/{audiobook_id}/transcript")
     def audiobook_transcript(audiobook_id: int):
         """Return the transcript.json content for an audiobook."""
-        import json as _json
-
         with get_conn() as conn:
             row = conn.execute(
                 "SELECT * FROM pub_audiobook_versions WHERE id=?", (audiobook_id,)
@@ -193,7 +223,7 @@ def register_audiobook_routes(app):
 
         try:
             with open(transcript_path, "r", encoding="utf-8") as fh:
-                data = _json.load(fh)
+                data = json.load(fh)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Failed to read transcript: {exc}")
 
@@ -202,14 +232,15 @@ def register_audiobook_routes(app):
     @app.get("/api/v1/audiobooks/{audiobook_id}/qc")
     def audiobook_qc(audiobook_id: int):
         """Run a full QC check on an audiobook and return the report."""
-        init_db()
-        report = _run_qc(audiobook_id)
+        try:
+            report = _run_qc(audiobook_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
         return {"audiobook_id": audiobook_id, **report}
 
     @app.delete("/api/v1/audiobooks/{audiobook_id}")
     def delete_audiobook(audiobook_id: int):
         """Delete the audiobook record, M4B file, and audio_chapters directory."""
-        init_db()
         with get_conn() as conn:
             row = conn.execute(
                 "SELECT * FROM pub_audiobook_versions WHERE id=?", (audiobook_id,)
@@ -225,19 +256,19 @@ def register_audiobook_routes(app):
             conn.execute(
                 "DELETE FROM pub_audiobook_versions WHERE id=?", (audiobook_id,)
             )
-            # 4. Reset book status to 'formatted'
+            # 2. Reset book status to 'formatted'
             conn.execute(
                 "UPDATE pub_books SET status='formatted' WHERE id=?", (book_id,)
             )
 
-        # 2. Delete M4B file
+        # 3. Delete M4B file
         if file_path.exists():
             try:
                 file_path.unlink()
             except Exception as exc:
                 print(f"[Audiobook] Warning: could not delete {file_path}: {exc}")
 
-        # 3. Delete audio_chapters/ directory
+        # 4. Delete audio_chapters/ directory
         if chapters_dir.exists():
             try:
                 shutil.rmtree(chapters_dir)
@@ -252,8 +283,7 @@ def register_audiobook_routes(app):
 
     @app.post("/api/v1/audiobooks/{audiobook_id}/regenerate")
     async def regenerate_audiobook(audiobook_id: int, background_tasks: BackgroundTasks):
-        """Reset book to 'formatted' status and re-trigger audiobook generation."""
-        init_db()
+        """Reset book to 'generating_audio' status and re-trigger audiobook generation."""
         with get_conn() as conn:
             row = conn.execute(
                 "SELECT * FROM pub_audiobook_versions WHERE id=?", (audiobook_id,)
@@ -263,13 +293,13 @@ def register_audiobook_routes(app):
 
             book_id = row["book_id"]
 
-            # 1. Reset book status to 'formatted'
-            conn.execute(
-                "UPDATE pub_books SET status='formatted' WHERE id=?", (book_id,)
-            )
-            # 2. Delete old audiobook version record
+            # 1. Delete old audiobook version record
             conn.execute(
                 "DELETE FROM pub_audiobook_versions WHERE id=?", (audiobook_id,)
+            )
+            # 2. Set book status to 'generating_audio' before kicking off background task
+            conn.execute(
+                "UPDATE pub_books SET status='generating_audio' WHERE id=?", (book_id,)
             )
 
         # 3. Trigger generate_audiobook as a background task
