@@ -26,6 +26,15 @@ class PublishRequest(BaseModel):
     audiobook_price: Optional[float] = 14.99
 
 
+class BookUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    blurb: Optional[str] = None
+    series: Optional[str] = None
+    book_number: Optional[int] = None
+    cover_art_path: Optional[str] = None
+    keywords: Optional[str] = None
+
+
 def register_routes(app):
     """Mount all /api/v1/publishing routes onto the FastAPI app."""
 
@@ -86,21 +95,24 @@ def register_routes(app):
         return {"status": "audiobook generation started", "book_id": book_id}
 
     @app.post("/api/v1/publishing/books/{book_id}/publish")
-    def publishing_publish(book_id: int, req: PublishRequest):
+    async def publishing_publish(book_id: int, req: PublishRequest, background_tasks: BackgroundTasks):
         init_db()
         book = get_book(book_id)
         if not book:
             raise HTTPException(status_code=404, detail="Book not found")
-        results = {}
-        try:
-            results["ebook"] = publish_ebook_to_gumroad(book_id, req.ebook_price)
-        except Exception as e:
-            results["ebook_error"] = str(e)
-        try:
-            results["audiobook"] = publish_audiobook_to_gumroad(book_id, req.audiobook_price)
-        except Exception as e:
-            results["audiobook_error"] = str(e)
-        return results
+
+        def _do_publish():
+            try:
+                publish_ebook_to_gumroad(book_id, req.ebook_price)
+            except Exception as e:
+                print(f"[Publishing] Ebook publish failed for book {book_id}: {e}")
+            try:
+                publish_audiobook_to_gumroad(book_id, req.audiobook_price)
+            except Exception as e:
+                print(f"[Publishing] Audiobook publish failed for book {book_id}: {e}")
+
+        background_tasks.add_task(_do_publish)
+        return {"status": "publishing started", "book_id": book_id}
 
     @app.post("/api/v1/publishing/books/{book_id}/export")
     def publishing_export(book_id: int):
@@ -125,9 +137,9 @@ def register_routes(app):
                 try:
                     if book["status"] == "uploaded":
                         format_book(book["id"])
-                    if book["status"] == "formatted":
+                    elif book["status"] == "formatted":
                         generate_audiobook(book["id"])
-                    if book["status"] == "audio_ready":
+                    elif book["status"] == "audio_ready":
                         publish_ebook_to_gumroad(book["id"])
                         publish_audiobook_to_gumroad(book["id"])
                 except Exception as e:
@@ -137,11 +149,10 @@ def register_routes(app):
         return {"status": "processing all books in background"}
 
     @app.patch("/api/v1/publishing/books/{book_id}")
-    def publishing_update_book(book_id: int, data: dict):
+    def publishing_update_book(book_id: int, data: BookUpdateRequest):
         """Update book metadata (title, blurb, cover_art_path, etc.)"""
         init_db()
-        allowed = {"title", "blurb", "series", "book_number", "cover_art_path", "keywords"}
-        updates = {k: v for k, v in data.items() if k in allowed}
+        updates = {k: v for k, v in data.model_dump(exclude_none=True).items()}
         if not updates:
             raise HTTPException(status_code=400, detail="No valid fields to update")
         set_clause = ", ".join(f"{k}=?" for k in updates)
