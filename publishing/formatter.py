@@ -2,7 +2,6 @@
 import re
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from publishing.database import get_conn, init_db
 
@@ -35,9 +34,14 @@ def format_book(book_id: int) -> dict:
         book = dict(book)
         conn.execute("UPDATE pub_books SET status='formatting' WHERE id=?", (book_id,))
 
+    if not book.get("manuscript_path"):
+        raise ValueError(f"Book {book_id} has no manuscript_path set")
     manuscript = Path(book["manuscript_path"])
     if not manuscript.exists():
         raise FileNotFoundError(f"Manuscript not found: {manuscript}")
+
+    if not book.get("slug"):
+        raise ValueError(f"Book {book_id} has no slug set")
 
     # Output directory for this book
     out_dir = _OUTPUT / book["slug"]
@@ -70,8 +74,13 @@ def format_book(book_id: int) -> dict:
 
     # Step 2: Markdown → EPUB
     epub_path = out_dir / "book.epub"
-    _run(["pandoc", str(md_path), "-o", str(epub_path),
-          "--toc", "--toc-depth=2"] + meta_args + cover_args)
+    try:
+        _run(["pandoc", str(md_path), "-o", str(epub_path),
+              "--toc", "--toc-depth=2"] + meta_args + cover_args)
+    except RuntimeError as e:
+        with get_conn() as conn:
+            conn.execute("UPDATE pub_books SET status='failed' WHERE id=?", (book_id,))
+        raise
     print(f"[Publishing] EPUB created: {epub_path}")
 
     # Step 3: EPUB → MOBI (via calibre)
@@ -122,7 +131,7 @@ def format_book(book_id: int) -> dict:
         conn.execute("UPDATE pub_books SET status='formatted' WHERE id=?", (book_id,))
 
     return {
-        "epub": str(epub_path) if epub_path.exists() else None,
+        "epub": str(epub_path) if epub_path and epub_path.exists() else None,
         "mobi": str(mobi_path) if mobi_path and mobi_path.exists() else None,
         "pdf": str(pdf_path) if pdf_path and pdf_path.exists() else None,
         "word_count": wc,
