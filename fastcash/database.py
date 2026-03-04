@@ -126,7 +126,7 @@ def init_db():
             username       TEXT,
             category       TEXT,
             rate_per_hour  REAL DEFAULT 0,
-            total_earned   TEXT,
+            total_earned   REAL DEFAULT 0,
             jobs_completed INTEGER DEFAULT 0,
             success_rate   REAL DEFAULT 0,
             skills         TEXT DEFAULT '[]',
