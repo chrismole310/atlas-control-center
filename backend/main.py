@@ -66,6 +66,7 @@ from auth import (
 )
 from fastcash_routes import register_routes
 from publishing_routes import register_routes as register_publishing_routes
+from audiobook_routes import register_audiobook_routes
 
 # Initialize FastAPI
 app = FastAPI(title="ATLAS CONTROL CENTER", version="2.0.0")
@@ -81,6 +82,7 @@ app.add_middleware(
 
 register_routes(app)
 register_publishing_routes(app)
+register_audiobook_routes(app)
 
 # WebSocket connection manager
 class ConnectionManager:
