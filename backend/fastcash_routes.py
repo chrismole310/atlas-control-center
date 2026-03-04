@@ -11,15 +11,16 @@ _REPO = Path(__file__).parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from fastcash.database import get_jobs, get_stats, get_conn, init_db
-from fastcash.scraper import run_full_scrape, run_quick_scrape
-from fastcash.atlas_worker import generate_proposal
+import os
+
 from fastcash.database import (
+    get_jobs, get_stats, get_conn, init_db,
     get_trending_skills, get_market_opportunities,
     get_top_performers, get_market_demand,
 )
+from fastcash.scraper import run_full_scrape, run_quick_scrape
+from fastcash.atlas_worker import generate_proposal
 from fastcash.market_scraper import run_market_intelligence_scrape
-import os
 
 
 class ApplyRequest(BaseModel):
