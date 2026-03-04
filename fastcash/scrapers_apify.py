@@ -50,11 +50,11 @@ def _normalize_indeed(item: dict) -> dict:
         "company": item.get("company", ""),
         "source": "indeed",
         "url": item.get("url") or item.get("jobUrl", ""),
-        "pay_rate": item.get("salary", ""),
+        "pay_rate": item.get("salary") or "",
         "pay_min": 0,
         "pay_max": 0,
         "remote": True,
-        "start_date": item.get("postedAt", ""),
+        "start_date": item.get("postedAt") or "",
         "payment_speed": "bi-weekly",
         "skills": [],
         "description": (item.get("description") or item.get("summary", ""))[:1000],
@@ -68,11 +68,11 @@ def _normalize_linkedin(item: dict) -> dict:
         "company": item.get("companyName") or item.get("company", ""),
         "source": "linkedin",
         "url": item.get("jobUrl") or item.get("url", ""),
-        "pay_rate": item.get("salary", ""),
+        "pay_rate": item.get("salary") or "",
         "pay_min": 0,
         "pay_max": 0,
         "remote": True,
-        "start_date": item.get("postedAt", ""),
+        "start_date": item.get("postedAt") or "",
         "payment_speed": "bi-weekly",
         "skills": item.get("skills") or [],
         "description": (item.get("description") or "")[:1000],
@@ -128,12 +128,19 @@ def scrape_platform(platform: str, queries: list = None, max_items: int = 25) ->
 
 
 def run_apify_scrapers(include_transcription: bool = True) -> list:
-    jobs = []
+    all_jobs = []
     for platform in ["upwork", "indeed", "linkedin"]:
-        jobs.extend(scrape_platform(platform, VIDEO_QUERIES[:2]))
+        all_jobs.extend(scrape_platform(platform, VIDEO_QUERIES[:2]))
     if include_transcription:
         transcription_jobs = scrape_platform("upwork", TRANSCRIPTION_QUERIES, max_items=15)
         for j in transcription_jobs:
             j["tab"] = "atlas"
-        jobs.extend(transcription_jobs)
+        all_jobs.extend(transcription_jobs)
+    # Deduplicate by URL
+    seen = set()
+    jobs = []
+    for j in all_jobs:
+        if j["url"] not in seen:
+            seen.add(j["url"])
+            jobs.append(j)
     return jobs

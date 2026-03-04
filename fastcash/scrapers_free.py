@@ -20,6 +20,7 @@ def scrape_remoteok() -> list:
     try:
         headers = {"User-Agent": "Atlas-FastCash/1.0"}
         resp = httpx.get(REMOTEOK_URL, headers=headers, timeout=15)
+        resp.raise_for_status()
         data = resp.json()
         for item in data:
             if not isinstance(item, dict) or not item.get("position"):
@@ -54,6 +55,7 @@ def scrape_remoteok() -> list:
 
 def scrape_weworkremotely() -> list:
     jobs = []
+    seen_urls = set()
     for feed_url in WWR_FEEDS:
         try:
             feed = feedparser.parse(feed_url)
@@ -61,11 +63,12 @@ def scrape_weworkremotely() -> list:
                 title = entry.get("title", "")
                 desc = entry.get("summary", "")
                 link = entry.get("link", "")
-                if not link:
+                if not link or link in seen_urls:
                     continue
+                seen_urls.add(link)
                 job = {
                     "title": title,
-                    "company": entry.get("author", ""),
+                    "company": entry.get("author") or "",
                     "source": "weworkremotely",
                     "url": link,
                     "pay_rate": "",
@@ -87,7 +90,14 @@ def scrape_weworkremotely() -> list:
 
 
 def run_free_scrapers() -> list:
+    all_jobs = []
+    all_jobs.extend(scrape_remoteok())
+    all_jobs.extend(scrape_weworkremotely())
+    # Deduplicate by URL
+    seen = set()
     jobs = []
-    jobs.extend(scrape_remoteok())
-    jobs.extend(scrape_weworkremotely())
+    for j in all_jobs:
+        if j["url"] not in seen:
+            seen.add(j["url"])
+            jobs.append(j)
     return jobs
