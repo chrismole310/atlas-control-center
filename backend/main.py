@@ -166,6 +166,24 @@ async def startup_event():
         auto_trader.start()
         print("[TRAX] Autonomous trader resumed from DB state")
 
+    # Initialize FastCash DB
+    from fastcash.database import init_db as fastcash_init_db
+    fastcash_init_db()
+    print("[FastCash] DB initialized.")
+
+    # Schedule 2-hour scrape loop
+    async def _fastcash_scrape_loop():
+        from fastcash.scraper import run_quick_scrape
+        while True:
+            try:
+                await asyncio.sleep(7200)  # 2 hours
+                run_quick_scrape()
+            except Exception as e:
+                print(f"[FastCash] Scrape loop error: {e}")
+
+    asyncio.create_task(_fastcash_scrape_loop())
+    print("[FastCash] 2-hour scrape loop scheduled.")
+
 # ============== AUTHENTICATION ENDPOINTS ==============
 
 @app.post("/api/v1/auth/register")
