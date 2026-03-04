@@ -222,5 +222,6 @@ def publish_audiobook_to_gumroad(book_id: int, price: float = 14.99) -> dict:
             "INSERT OR REPLACE INTO pub_publications (book_id, platform, format, status, store_url, price, published_at) VALUES (?,?,?,?,?,?,datetime('now'))",
             (book_id, "gumroad", "audiobook", "live", store_url, price)
         )
+        conn.execute("UPDATE pub_books SET status='published' WHERE id=?", (book_id,))
 
     return {"store_url": store_url, "price": price}

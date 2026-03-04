@@ -102,14 +102,20 @@ def register_routes(app):
             raise HTTPException(status_code=404, detail="Book not found")
 
         def _do_publish():
+            from publishing.database import get_conn
+            ebook_ok = False
             try:
                 publish_ebook_to_gumroad(book_id, req.ebook_price)
+                ebook_ok = True
             except Exception as e:
                 print(f"[Publishing] Ebook publish failed for book {book_id}: {e}")
-            try:
-                publish_audiobook_to_gumroad(book_id, req.audiobook_price)
-            except Exception as e:
-                print(f"[Publishing] Audiobook publish failed for book {book_id}: {e}")
+                with get_conn() as conn:
+                    conn.execute("UPDATE pub_books SET status='failed' WHERE id=?", (book_id,))
+            if ebook_ok:
+                try:
+                    publish_audiobook_to_gumroad(book_id, req.audiobook_price)
+                except Exception as e:
+                    print(f"[Publishing] Audiobook publish failed for book {book_id}: {e}")
 
         background_tasks.add_task(_do_publish)
         return {"status": "publishing started", "book_id": book_id}
