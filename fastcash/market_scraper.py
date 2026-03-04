@@ -205,10 +205,12 @@ def identify_opportunities():
 
         skills = conn.execute("""
             SELECT * FROM trending_skills
-            WHERE demand_score >= 3
+            WHERE demand_score >= 2
             ORDER BY opportunity_score DESC
             LIMIT 10
         """).fetchall()
+        # demand_score >= 2 requires 8+ job mentions (round(count/5) >= 2)
+        # raise to >= 3 once dataset exceeds ~1000 jobs
 
         for skill in skills:
             s = dict(skill)
