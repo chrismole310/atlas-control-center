@@ -7,7 +7,20 @@ const { getQueue, QUEUE_NAMES } = require('./queue');
 const { query } = require('./database');
 const { createLogger } = require('./logger');
 
+const { runTrendScraper } = require('../engines/trend-scraper/index');
+
 const logger = createLogger('orchestrator');
+
+// Register queue processors
+function registerProcessors() {
+  const scrapingQueue = getQueue(QUEUE_NAMES.TREND_SCRAPING);
+  scrapingQueue.process(async (job) => {
+    logger.info('Processing trend scraping job', { jobId: job.id });
+    const result = await runTrendScraper();
+    logger.info('Trend scraping job complete', result);
+    return result;
+  });
+}
 
 /**
  * Dispatch the daily scraping job to the trend-scraping queue.
@@ -91,6 +104,7 @@ async function runDailyCycle() {
 }
 
 module.exports = {
+  registerProcessors,
   dispatchScraping,
   dispatchMarketIntelligence,
   dispatchImageGeneration,
