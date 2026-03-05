@@ -1988,3 +1988,743 @@ open http://localhost:3000/art-factory
 ```
 
 Expected: All pass, dashboard shows 50 silos in the Silos tab, API status shows ONLINE.
+
+---
+
+## SCHEMA AMENDMENT: Artist Inspiration & Style DNA
+
+*Added after initial plan approval. Three new tables + two column additions to `artworks`.*
+
+---
+
+### Task 1A: Artist DNA schema migration
+
+**Files:**
+- Modify: `atlas-art-factory/database/schema.sql` (append)
+- Modify: `atlas-art-factory/database/migrate.js` (already runs full schema — no change needed)
+
+**Step 1: Append to schema.sql**
+
+```sql
+-- ============================================
+-- ARTIST INSPIRATION & STYLE DNA
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS artist_inspirations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50),
+    era VARCHAR(50),
+    style_characteristics JSONB,
+    color_signatures JSONB,
+    composition_patterns JSONB,
+    famous_works TEXT[],
+    market_value_tier VARCHAR(20),
+    cultural_influence INTEGER,
+    atlas_application JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ai_artist_dna (
+    id SERIAL PRIMARY KEY,
+    ai_artist_id INTEGER REFERENCES ai_artists(id),
+    inspiration_source_id INTEGER REFERENCES artist_inspirations(id),
+    influence_percentage INTEGER,
+    inherited_characteristics JSONB,
+    style_fusion_notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS style_clusters (
+    id SERIAL PRIMARY KEY,
+    cluster_name VARCHAR(100) UNIQUE,
+    description TEXT,
+    inspiration_ids INTEGER[],
+    market_segment VARCHAR(50),
+    target_platforms TEXT[],
+    avg_price_point DECIMAL(10,2),
+    performance_score DECIMAL(5,2),
+    cultural_markers JSONB,
+    key_characteristics JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE artworks
+    ADD COLUMN IF NOT EXISTS inspiration_dna_id INTEGER REFERENCES artist_inspirations(id),
+    ADD COLUMN IF NOT EXISTS style_cluster_id INTEGER REFERENCES style_clusters(id);
+```
+
+**Step 2: Re-run migration**
+
+```bash
+cd atlas-art-factory && npm run migrate
+```
+
+Expected: `✅ Schema migrated successfully` (IF NOT EXISTS guards make it safe to re-run)
+
+**Step 3: Verify new tables**
+
+```bash
+docker exec atlas_art_postgres psql -U atlas -d atlas_art_factory -c "\dt" | grep -E "artist_inspir|ai_artist_dna|style_cluster"
+```
+
+Expected: 3 new tables listed.
+
+**Step 4: Commit**
+
+```bash
+git add atlas-art-factory/database/schema.sql
+git commit -m "feat(art-factory): artist DNA schema — inspirations, dna links, style clusters"
+```
+
+---
+
+### Task 1B: Artist inspiration + style cluster config files
+
+**Files:**
+- Create: `atlas-art-factory/config/artist-inspirations.json`
+- Create: `atlas-art-factory/config/style-clusters.json`
+- Modify: `atlas-art-factory/config/artists.json` (replace with DNA-enhanced format)
+
+**Step 1: Create `config/artist-inspirations.json`**
+
+The 8 seed artist inspirations (Warhol, Basquiat, Banksy, KAWS, Murakami, Rothko, Wiley, Kusama) plus 42 additional artists to fill out the full set:
+
+```json
+[
+  {
+    "id": 1, "name": "Andy Warhol", "category": "pop_art", "era": "1960s-1980s",
+    "styleCharacteristics": { "technique": "screen printing, bold colors, repetition", "subjects": "consumer products, celebrities, everyday objects", "composition": "grid layouts, repeated images, flat colors", "iconicElements": ["soup cans", "celebrity portraits", "bright colors", "commercial aesthetic"] },
+    "colorSignatures": { "primary": ["#FF00FF", "#FFFF00", "#00FFFF", "#FF0000"], "palette": "bold saturated primaries, high contrast", "style": "flat, screen-printed look" },
+    "compositionPatterns": { "layout": "grid repetition, centered subjects", "background": "solid flat colors", "elements": "clean edges, no gradients, commercial polish" },
+    "culturalInfluence": 100, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["pop_art_animals", "consumer_culture_art"], "promptModifiers": ["warhol style", "pop art", "screen print aesthetic", "bold flat colors", "repeated grid pattern"], "targetMarket": "luxury homes, corporate art, modern collectors" }
+  },
+  {
+    "id": 2, "name": "Jean-Michel Basquiat", "category": "street_art", "era": "1980s",
+    "styleCharacteristics": { "technique": "graffiti, text, symbols, chaotic layering", "subjects": "faces, crowns, skulls, words, abstract figures", "composition": "layered, energetic, raw, expressive", "iconicElements": ["three-pointed crown", "skull motifs", "text integration", "anatomical drawings"] },
+    "colorSignatures": { "primary": ["#000000", "#FFFF00", "#FF0000", "#00FFFF", "#FFFFFF"], "palette": "bright primaries on raw backgrounds", "style": "bold strokes, drips, gestural marks" },
+    "compositionPatterns": { "layout": "asymmetric, energetic, layered", "background": "raw canvas, newspaper, wood texture", "elements": "crown symbols, text scratched out, anatomical elements" },
+    "culturalInfluence": 98, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["crown_animals", "graffiti_luxury_art", "street_art_abstracts"], "promptModifiers": ["basquiat style", "graffiti crown", "neo-expressionist", "raw energy", "text and symbols"], "targetMarket": "luxury collectors, hedge fund offices, contemporary galleries" }
+  },
+  {
+    "id": 3, "name": "Banksy", "category": "street_art", "era": "2000s-present",
+    "styleCharacteristics": { "technique": "stencil, spray paint, political satire", "subjects": "social commentary, rats, children, police, politicians", "composition": "clean stencil lines, powerful messaging", "iconicElements": ["rats", "girl with balloon", "flower thrower", "kissing policemen"] },
+    "colorSignatures": { "primary": ["#000000", "#FFFFFF", "#FF0000"], "palette": "monochrome with red accent", "style": "high contrast stencil aesthetic" },
+    "compositionPatterns": { "layout": "centered subject, minimal background", "background": "weathered walls, urban textures", "elements": "political messages, irony, subversion" },
+    "culturalInfluence": 97, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["urban_animal_art", "stencil_street_art"], "promptModifiers": ["banksy style", "stencil art", "urban graffiti", "street art", "political commentary"], "targetMarket": "contemporary collectors, urban art lovers, millennials" }
+  },
+  {
+    "id": 4, "name": "KAWS", "category": "street_art", "era": "1990s-present",
+    "styleCharacteristics": { "technique": "cartoon appropriation, x-ed out eyes, soft edges", "subjects": "companion character, cartoon characters, skulls", "composition": "clean graphic style, toy-like aesthetic", "iconicElements": ["XX eyes", "companion figure", "soft rounded forms", "pastel colors"] },
+    "colorSignatures": { "primary": ["#FFB6C1", "#87CEEB", "#FFE4B5", "#B0E0E6"], "palette": "soft pastels, gentle colors", "style": "clean toy aesthetic, vinyl figure look" },
+    "compositionPatterns": { "layout": "centered characters, clean backgrounds", "background": "solid colors or minimal patterns", "elements": "x-ed eyes, rounded forms, toy-like finish" },
+    "culturalInfluence": 92, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["kawaii_animals", "toy_aesthetic_art"], "promptModifiers": ["kaws style", "xx eyes", "toy aesthetic", "soft pastel", "companion character"], "targetMarket": "streetwear collectors, young professionals, modern nurseries" }
+  },
+  {
+    "id": 5, "name": "Takashi Murakami", "category": "contemporary", "era": "1990s-present",
+    "styleCharacteristics": { "technique": "superflat, anime influence, pattern repetition", "subjects": "smiling flowers, rainbow colors, cartoon characters", "composition": "flat perspective, pattern fills, joyful chaos", "iconicElements": ["smiling flower", "mr. dob character", "rainbow patterns", "anime eyes"] },
+    "colorSignatures": { "primary": ["#FF1493", "#00CED1", "#FFD700", "#FF4500", "#00FF00"], "palette": "super bright rainbow explosion", "style": "flat digital color, no shadows" },
+    "compositionPatterns": { "layout": "all-over pattern, no focal point", "background": "filled with repeating motifs", "elements": "smiling faces, flowers, anime characters" },
+    "culturalInfluence": 95, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["rainbow_flower_art", "kawaii_maximalist"], "promptModifiers": ["murakami style", "superflat", "smiling flowers", "rainbow explosion", "anime aesthetic"], "targetMarket": "luxury collectors, fashion collaborations, pop culture fans" }
+  },
+  {
+    "id": 6, "name": "Mark Rothko", "category": "abstract", "era": "1940s-1970s",
+    "styleCharacteristics": { "technique": "color field, soft edges, emotional atmosphere", "subjects": "rectangles of color, pure abstraction", "composition": "stacked horizontal bands, floating forms", "iconicElements": ["soft-edged rectangles", "luminous color", "emotional depth"] },
+    "colorSignatures": { "primary": ["#8B0000", "#FF4500", "#4B0082", "#000080"], "palette": "deep rich colors, luminous quality", "style": "soft blurred edges, layered transparency" },
+    "compositionPatterns": { "layout": "horizontal bands, floating rectangles", "background": "color itself is the subject", "elements": "soft edges, no hard lines, meditative" },
+    "culturalInfluence": 98, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["color_field_abstracts", "meditative_wall_art", "luxury_minimalism"], "promptModifiers": ["rothko style", "color field", "soft edges", "luminous", "emotional abstraction"], "targetMarket": "corporate lobbies, luxury condos, meditation spaces" }
+  },
+  {
+    "id": 7, "name": "Kehinde Wiley", "category": "figurative", "era": "2000s-present",
+    "styleCharacteristics": { "technique": "classical portraiture, ornate backgrounds, photorealistic", "subjects": "contemporary people in classical poses", "composition": "centered figure, elaborate pattern backgrounds", "iconicElements": ["ornate floral backgrounds", "classical poses", "vibrant patterns", "regal presentation"] },
+    "colorSignatures": { "primary": ["#228B22", "#FFD700", "#4169E1", "#DC143C"], "palette": "rich jewel tones, ornate patterns", "style": "photorealistic with decorative backgrounds" },
+    "compositionPatterns": { "layout": "centered portrait, elaborate background", "background": "ornate floral and decorative patterns", "elements": "classical poses, regal dignity, vibrant decoration" },
+    "culturalInfluence": 90, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["regal_pet_portraits", "ornate_animal_portraits"], "promptModifiers": ["kehinde wiley style", "ornate floral background", "regal portrait", "classical pose", "vibrant patterns"], "targetMarket": "luxury homes, contemporary collectors, cultural institutions" }
+  },
+  {
+    "id": 8, "name": "Yayoi Kusama", "category": "conceptual", "era": "1950s-present",
+    "styleCharacteristics": { "technique": "polka dots, infinite repetition, immersive patterns", "subjects": "dots covering everything, pumpkins, infinity rooms", "composition": "all-over pattern, obsessive repetition", "iconicElements": ["polka dots everywhere", "infinity nets", "pumpkin sculptures"] },
+    "colorSignatures": { "primary": ["#FF0000", "#FFFF00", "#000000", "#FFFFFF"], "palette": "bold primaries with polka dots", "style": "dots covering every surface" },
+    "compositionPatterns": { "layout": "repetitive pattern fills entire canvas", "background": "covered in dots or nets", "elements": "obsessive repetition, infinite pattern" },
+    "culturalInfluence": 95, "marketValueTier": "millions",
+    "atlasApplication": { "silos": ["polka_dot_animals", "pattern_maximalism"], "promptModifiers": ["kusama style", "polka dots", "infinite pattern", "repetitive dots", "obsessive detail"], "targetMarket": "contemporary collectors, maximalist interiors, Instagram-worthy art" }
+  },
+  { "id": 9,  "name": "Keith Haring",       "category": "street_art",   "era": "1980s",          "culturalInfluence": 96, "marketValueTier": "millions",  "colorSignatures": { "primary": ["#FF0000", "#FFFF00", "#0000FF", "#000000"] }, "atlasApplication": { "promptModifiers": ["keith haring style", "bold outlines", "dancing figures", "graffiti energy", "accessible pop art"] } },
+  { "id": 10, "name": "Frida Kahlo",         "category": "surrealism",   "era": "1930s-1950s",    "culturalInfluence": 97, "marketValueTier": "millions",  "colorSignatures": { "primary": ["#FF0000", "#228B22", "#FFD700", "#4B0082"] }, "atlasApplication": { "promptModifiers": ["frida kahlo style", "symbolic self portrait", "flower crown", "vibrant mexican folk art", "surrealist elements"] } },
+  { "id": 11, "name": "Salvador Dali",       "category": "surrealism",   "era": "1920s-1980s",    "culturalInfluence": 98, "marketValueTier": "millions",  "colorSignatures": { "primary": ["#DAA520", "#8B0000", "#87CEEB", "#DEB887"] }, "atlasApplication": { "promptModifiers": ["dali surrealist style", "melting forms", "dreamlike", "surreal landscape", "impossible objects"] } },
+  { "id": 12, "name": "Vincent van Gogh",    "category": "post_impressionism", "era": "1880s-1890s", "culturalInfluence": 100, "marketValueTier": "millions", "colorSignatures": { "primary": ["#4169E1", "#FFD700", "#228B22", "#FF8C00"] }, "atlasApplication": { "promptModifiers": ["van gogh style", "swirling brushstrokes", "impasto", "starry night aesthetic", "bold expressive strokes"] } },
+  { "id": 13, "name": "Pablo Picasso",       "category": "cubism",       "era": "1900s-1970s",    "culturalInfluence": 100, "marketValueTier": "millions",  "colorSignatures": { "primary": ["#8B0000", "#4169E1", "#228B22", "#1C1C1C"] }, "atlasApplication": { "promptModifiers": ["picasso cubist style", "geometric fragmentation", "multiple perspectives", "cubism", "abstract figure"] } },
+  { "id": 14, "name": "Claude Monet",        "category": "impressionism","era": "1860s-1920s",    "culturalInfluence": 99, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#87CEEB", "#98FB98", "#FFB6C1", "#F0E68C"] }, "atlasApplication": { "promptModifiers": ["monet impressionist style", "soft brushwork", "light and atmosphere", "water lilies aesthetic", "plein air painting"] } },
+  { "id": 15, "name": "Henri Matisse",       "category": "fauvism",      "era": "1900s-1950s",    "culturalInfluence": 98, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#FF4500", "#4169E1", "#228B22", "#FFD700"] }, "atlasApplication": { "promptModifiers": ["matisse style", "bold flat colors", "decorative patterns", "joy of life", "fauvism"] } },
+  { "id": 16, "name": "Roy Lichtenstein",    "category": "pop_art",      "era": "1960s-1990s",    "culturalInfluence": 94, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#FF0000", "#FFFF00", "#0000FF", "#000000"] }, "atlasApplication": { "promptModifiers": ["lichtenstein style", "ben-day dots", "comic book aesthetic", "bold outlines", "speech bubble"] } },
+  { "id": 17, "name": "Damien Hirst",        "category": "contemporary", "era": "1990s-present",  "culturalInfluence": 91, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#FF0000", "#FFFF00", "#0000FF", "#FFFFFF"] }, "atlasApplication": { "promptModifiers": ["damien hirst style", "spot painting", "colorful dots grid", "pharmaceutical aesthetic", "conceptual art"] } },
+  { "id": 18, "name": "Jeff Koons",          "category": "contemporary", "era": "1980s-present",  "culturalInfluence": 89, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#C0C0C0", "#FFD700", "#FF69B4", "#87CEEB"] }, "atlasApplication": { "promptModifiers": ["jeff koons style", "balloon animal", "high gloss", "reflective surface", "kitsch luxury"] } },
+  { "id": 19, "name": "Shepard Fairey",      "category": "street_art",   "era": "1990s-present",  "culturalInfluence": 88, "marketValueTier": "high",       "colorSignatures": { "primary": ["#FF0000", "#003366", "#F5C518", "#FFFFFF"] }, "atlasApplication": { "promptModifiers": ["shepard fairey style", "obey propaganda", "bold graphic", "stencil portrait", "political poster"] } },
+  { "id": 20, "name": "Yoshitomo Nara",      "category": "neo_pop",      "era": "1990s-present",  "culturalInfluence": 87, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#FFFACD", "#FFB6C1", "#87CEEB", "#000000"] }, "atlasApplication": { "promptModifiers": ["yoshitomo nara style", "big eyes children", "defiant innocence", "simple background", "emotional child figure"] } },
+  { "id": 21, "name": "Kara Walker",         "category": "contemporary", "era": "1990s-present",  "culturalInfluence": 92, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#000000", "#FFFFFF"] }, "atlasApplication": { "promptModifiers": ["silhouette art", "high contrast black white", "narrative silhouette", "gothic style", "historical allegory"] } },
+  { "id": 22, "name": "Wifredo Lam",         "category": "surrealism",   "era": "1940s-1980s",    "culturalInfluence": 85, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#228B22", "#000000", "#8B4513", "#FFD700"] }, "atlasApplication": { "promptModifiers": ["wifredo lam style", "afro-cuban surrealism", "jungle spirits", "hybrid figures", "lush tropical"] } },
+  { "id": 23, "name": "Jean Dubuffet",       "category": "outsider_art", "era": "1940s-1980s",    "culturalInfluence": 84, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#000000", "#FFFFFF", "#FF0000", "#8B8B00"] }, "atlasApplication": { "promptModifiers": ["dubuffet art brut style", "crude figures", "outsider art", "childlike energy", "textured surfaces"] } },
+  { "id": 24, "name": "Helen Frankenthaler", "category": "abstract",     "era": "1950s-2000s",    "culturalInfluence": 89, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#FF69B4", "#87CEEB", "#98FB98", "#DDA0DD"] }, "atlasApplication": { "promptModifiers": ["frankenthaler style", "color stain painting", "soft organic forms", "poured paint", "lyrical abstraction"] } },
+  { "id": 25, "name": "Ellsworth Kelly",     "category": "minimalism",   "era": "1950s-2010s",    "culturalInfluence": 87, "marketValueTier": "millions",   "colorSignatures": { "primary": ["#FF0000", "#0000FF", "#FFFF00", "#000000"] }, "atlasApplication": { "promptModifiers": ["ellsworth kelly style", "bold color shapes", "hard edge abstraction", "pure color", "minimal form"] } }
+]
+```
+
+**Step 2: Create `config/style-clusters.json`**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Hedge Fund Office Luxury",
+    "description": "Bold contemporary art for wealth display — Billions aesthetic",
+    "inspirationArtists": ["Jean-Michel Basquiat", "Andy Warhol", "Damien Hirst", "Jeff Koons", "Takashi Murakami"],
+    "marketSegment": "ultra_luxury",
+    "targetPlatforms": ["society6", "saatchi", "artsy"],
+    "avgPricePoint": 150.00,
+    "culturalMarkers": ["Billions TV show aesthetic", "Axe Capital office", "Wealth signaling", "Contemporary power"],
+    "keyCharacteristics": { "size": "large scale", "colors": "bold, high impact", "style": "contemporary, street art influenced", "message": "cultural sophistication + rebellion" }
+  },
+  {
+    "id": 2,
+    "name": "Luxury Condo Minimalism",
+    "description": "Serene abstracts and color fields for high-end living",
+    "inspirationArtists": ["Mark Rothko", "Gerhard Richter", "Helen Frankenthaler", "Ellsworth Kelly", "Agnes Martin"],
+    "marketSegment": "luxury_residential",
+    "targetPlatforms": ["society6", "etsy_premium", "saatchi"],
+    "avgPricePoint": 120.00,
+    "culturalMarkers": ["Modern luxury condos", "Architectural Digest aesthetic", "Peaceful sophistication"],
+    "keyCharacteristics": { "size": "medium to large", "colors": "sophisticated, muted, luminous", "style": "abstract, color field, minimal", "message": "calm, cultured, expensive taste" }
+  },
+  {
+    "id": 3,
+    "name": "Pop Culture Rebellion",
+    "description": "Street art and pop art for millennials and Gen Z",
+    "inspirationArtists": ["Banksy", "KAWS", "Shepard Fairey", "Keith Haring", "Mr. Brainwash"],
+    "marketSegment": "contemporary_youth",
+    "targetPlatforms": ["etsy", "gumroad", "redbubble"],
+    "avgPricePoint": 45.00,
+    "culturalMarkers": ["Streetwear culture", "Instagram aesthetic", "Subversive humor", "Contemporary cool"],
+    "keyCharacteristics": { "size": "small to medium", "colors": "bold, urban, contrasted", "style": "street art, stencil, graffiti", "message": "anti-establishment + accessible" }
+  },
+  {
+    "id": 4,
+    "name": "Kawaii Maximalism",
+    "description": "Japanese-influenced joyful chaos for pop culture fans",
+    "inspirationArtists": ["Takashi Murakami", "Yayoi Kusama", "Yoshitomo Nara", "KAWS"],
+    "marketSegment": "fashion_forward",
+    "targetPlatforms": ["redbubble", "society6", "gumroad"],
+    "avgPricePoint": 55.00,
+    "culturalMarkers": ["Fashion collaborations", "Anime influence", "Superflat movement", "Instagram maximalism"],
+    "keyCharacteristics": { "size": "medium", "colors": "rainbow, super saturated, joyful", "style": "flat, pattern-heavy, kawaii", "message": "joy, abundance, pop culture" }
+  },
+  {
+    "id": 5,
+    "name": "Corporate Sophistication",
+    "description": "Professional abstracts for offices and lobbies",
+    "inspirationArtists": ["Mark Rothko", "Ellsworth Kelly", "Frank Stella", "Bridget Riley", "Sol LeWitt"],
+    "marketSegment": "corporate",
+    "targetPlatforms": ["society6", "saatchi", "etsy_business"],
+    "avgPricePoint": 95.00,
+    "culturalMarkers": ["Law firm lobbies", "Corporate headquarters", "Professional polish"],
+    "keyCharacteristics": { "size": "large", "colors": "sophisticated, restrained, professional", "style": "geometric, minimal, abstract", "message": "success, order, professionalism" }
+  },
+  {
+    "id": 6,
+    "name": "Nursery Whimsy",
+    "description": "Gentle, nurturing art for babies and children's rooms",
+    "inspirationArtists": ["KAWS", "Yoshitomo Nara", "Keith Haring"],
+    "marketSegment": "family_home",
+    "targetPlatforms": ["etsy", "gumroad", "society6"],
+    "avgPricePoint": 25.00,
+    "culturalMarkers": ["New parent lifestyle", "Pottery Barn Kids aesthetic", "Safe and nurturing"],
+    "keyCharacteristics": { "size": "small to medium", "colors": "soft pastels, warm", "style": "cute, rounded, friendly", "message": "safety, wonder, growth" }
+  },
+  {
+    "id": 7,
+    "name": "Botanical Luxury",
+    "description": "High-end botanical and nature art for sophisticated homes",
+    "inspirationArtists": ["Henri Matisse", "Frida Kahlo", "Kehinde Wiley"],
+    "marketSegment": "luxury_residential",
+    "targetPlatforms": ["etsy_premium", "society6", "creative_market"],
+    "avgPricePoint": 75.00,
+    "culturalMarkers": ["Biophilic design", "Luxury wellness", "Nature-connected living"],
+    "keyCharacteristics": { "size": "medium to large", "colors": "rich botanicals, jewel tones", "style": "detailed illustration, lush", "message": "nature, growth, refined taste" }
+  }
+]
+```
+
+**Step 3: Update `config/artists.json` with DNA-enhanced format**
+
+Replace the simple artists.json with DNA-enhanced versions. The first 7 are fully defined; the remaining 43 follow the same pattern using appropriate inspiration sources per silo:
+
+```json
+[
+  {
+    "id": 1, "name": "Neon Basquiat Beast", "silo": "nursery-animals",
+    "description": "Street art animals with Basquiat's crown and energy",
+    "inspirationDNA": [
+      { "sourceArtist": "Jean-Michel Basquiat", "influence": 60, "inheritedTraits": ["crown motifs", "graffiti energy", "text integration", "raw expression"] },
+      { "sourceArtist": "Keith Haring", "influence": 30, "inheritedTraits": ["bold outlines", "energetic lines", "accessibility"] },
+      { "sourceArtist": "KAWS", "influence": 10, "inheritedTraits": ["cartoon influence", "contemporary appeal"] }
+    ],
+    "styleCluster": "Hedge Fund Office Luxury",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} wearing three-pointed crown, basquiat neo-expressionist style, graffiti energy, raw gestural brushstrokes, {{color1}} and {{color2}} and black, text elements integrated, anatomical sketches, urban raw aesthetic, crown motif prominent, street art luxury, museum quality digital art",
+    "negative_prompts": ["low quality", "blurry", "watermark", "polished corporate", "soft edges"],
+    "marketPositioning": { "segment": "luxury_contemporary", "pricePoint": "premium", "targetBuyers": ["hedge fund offices", "luxury condos", "contemporary collectors"] },
+    "culturalReferences": ["Billions office aesthetic", "Contemporary art galleries", "Street art legitimacy"]
+  },
+  {
+    "id": 2, "name": "Pop Warhol Creatures", "silo": "botanical-prints",
+    "description": "Animals in Warhol's iconic screen print style",
+    "inspirationDNA": [
+      { "sourceArtist": "Andy Warhol", "influence": 70, "inheritedTraits": ["screen print aesthetic", "bold flat colors", "grid repetition", "commercial polish"] },
+      { "sourceArtist": "Roy Lichtenstein", "influence": 20, "inheritedTraits": ["ben-day dots", "comic book aesthetic", "bold outlines"] },
+      { "sourceArtist": "Keith Haring", "influence": 10, "inheritedTraits": ["accessibility", "pop culture appeal"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in andy warhol pop art style, screen print aesthetic, bold flat colors ({{color1}}, {{color2}}, {{color3}}), repeated 4-panel grid layout, high contrast, clean edges, no gradients, commercial polish, iconic pop art, celebrity poster style",
+    "negative_prompts": ["realistic photo", "gradients", "soft edges", "amateur"],
+    "marketPositioning": { "segment": "luxury_pop_art", "pricePoint": "high", "targetBuyers": ["corporate art buyers", "modern collectors", "pop culture enthusiasts"] },
+    "culturalReferences": ["Campbell's soup can series", "Marilyn Monroe portraits", "Factory era NYC"]
+  },
+  {
+    "id": 3, "name": "Rothko Mood Fields", "silo": "motivational-quotes",
+    "description": "Color field abstracts inspired by Rothko's emotional depth",
+    "inspirationDNA": [
+      { "sourceArtist": "Mark Rothko", "influence": 80, "inheritedTraits": ["color field", "soft edges", "luminous quality", "emotional depth"] },
+      { "sourceArtist": "Helen Frankenthaler", "influence": 15, "inheritedTraits": ["stain painting", "organic forms", "lyrical abstraction"] },
+      { "sourceArtist": "Gerhard Richter", "influence": 5, "inheritedTraits": ["abstract beauty", "contemporary relevance"] }
+    ],
+    "styleCluster": "Luxury Condo Minimalism",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "rothko style color field painting, soft-edged horizontal bands of {{color1}} and {{color2}}, luminous transparent layers, blurred boundaries, meditative mood, emotional depth, floating rectangles, no hard edges, contemplative atmosphere, museum quality abstract art",
+    "negative_prompts": ["busy", "cluttered", "literal", "figurative", "recognizable objects"],
+    "marketPositioning": { "segment": "corporate_luxury", "pricePoint": "premium", "targetBuyers": ["corporate lobbies", "law firm offices", "luxury condos", "meditation spaces"] },
+    "culturalReferences": ["Rothko Chapel", "Seagram murals", "Abstract Expressionism"]
+  },
+  {
+    "id": 4, "name": "Banksy Urban Fauna", "silo": "minimalist-abstract",
+    "description": "Animals in Banksy's stencil street art style",
+    "inspirationDNA": [
+      { "sourceArtist": "Banksy", "influence": 75, "inheritedTraits": ["stencil aesthetic", "political edge", "urban textures", "ironic messaging"] },
+      { "sourceArtist": "Shepard Fairey", "influence": 15, "inheritedTraits": ["bold graphics", "propaganda style", "high contrast"] },
+      { "sourceArtist": "Keith Haring", "influence": 10, "inheritedTraits": ["bold outlines", "accessibility", "social commentary"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in banksy stencil style, black and white with {{accent_color}} accent, spray paint aesthetic, weathered brick wall background, urban street art, political satire mood, high contrast stencil, graffiti texture, contemporary street art",
+    "negative_prompts": ["polished", "clean digital", "corporate", "soft colors"],
+    "marketPositioning": { "segment": "contemporary_urban", "pricePoint": "mid_to_high", "targetBuyers": ["millennials", "urban collectors", "contemporary galleries"] },
+    "culturalReferences": ["Girl with Balloon", "Flower Thrower", "Rats series"]
+  },
+  {
+    "id": 5, "name": "Murakami Rainbow Kingdom", "silo": "bathroom-humor",
+    "description": "Superflat kawaii animals with Murakami's joyful chaos",
+    "inspirationDNA": [
+      { "sourceArtist": "Takashi Murakami", "influence": 85, "inheritedTraits": ["superflat", "smiling flowers", "rainbow colors", "anime influence", "pattern repetition"] },
+      { "sourceArtist": "KAWS", "influence": 10, "inheritedTraits": ["cartoon appropriation", "contemporary appeal"] },
+      { "sourceArtist": "Yayoi Kusama", "influence": 5, "inheritedTraits": ["pattern obsession", "maximalism"] }
+    ],
+    "styleCluster": "Kawaii Maximalism",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in takashi murakami superflat style, smiling flower motifs surrounding, rainbow explosion colors ({{color1}}, {{color2}}, {{color3}}, {{color4}}), anime eyes, flat digital aesthetic, no shadows, pattern repetition, kawaii maximalist, joyful chaos",
+    "negative_prompts": ["realistic", "dark", "3d render", "shadows", "gradients"],
+    "marketPositioning": { "segment": "luxury_pop_culture", "pricePoint": "high", "targetBuyers": ["fashion collectors", "pop culture fans", "luxury brand collaborators"] },
+    "culturalReferences": ["Louis Vuitton collaboration", "Superflat movement", "Anime influence in fine art"]
+  },
+  {
+    "id": 6, "name": "Kusama Dot Menagerie", "silo": "kitchen-food-art",
+    "description": "Animals covered in Kusama's obsessive polka dots",
+    "inspirationDNA": [
+      { "sourceArtist": "Yayoi Kusama", "influence": 90, "inheritedTraits": ["polka dots everywhere", "infinite repetition", "obsessive pattern", "immersive quality"] },
+      { "sourceArtist": "Takashi Murakami", "influence": 10, "inheritedTraits": ["pop culture accessibility", "vibrant colors"] }
+    ],
+    "styleCluster": "Kawaii Maximalism",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} completely covered in kusama polka dots, infinite dot pattern, {{color1}} dots on {{color2}} background, obsessive repetition, dots covering every surface, immersive pattern, infinity net aesthetic, maximalist dot art",
+    "negative_prompts": ["plain", "no dots", "minimalist", "boring"],
+    "marketPositioning": { "segment": "contemporary_maximalist", "pricePoint": "mid_to_high", "targetBuyers": ["Instagram collectors", "maximalist interiors", "contemporary enthusiasts"] },
+    "culturalReferences": ["Infinity Rooms", "Pumpkin sculptures", "Obsessive pattern making"]
+  },
+  {
+    "id": 7, "name": "Wiley Regal Beasts", "silo": "watercolor-landscapes",
+    "description": "Animals as royalty with ornate Kehinde Wiley backgrounds",
+    "inspirationDNA": [
+      { "sourceArtist": "Kehinde Wiley", "influence": 80, "inheritedTraits": ["ornate floral backgrounds", "classical poses", "regal dignity", "photorealistic detail"] },
+      { "sourceArtist": "Amy Sherald", "influence": 15, "inheritedTraits": ["contemporary portraiture", "cultural significance"] },
+      { "sourceArtist": "Frida Kahlo", "influence": 5, "inheritedTraits": ["symbolic animal companions"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in regal classical pose, kehinde wiley ornate style, elaborate baroque floral background pattern in {{color1}} and {{color2}}, photorealistic animal portrait, luxurious decorative elements, gold accents, vibrant ornate patterns, contemporary classical fusion, dignified and majestic",
+    "negative_prompts": ["cartoon", "simple background", "cheap", "low quality"],
+    "marketPositioning": { "segment": "luxury_contemporary", "pricePoint": "premium", "targetBuyers": ["luxury pet owners", "contemporary collectors", "cultural institutions"] },
+    "culturalReferences": ["Obama portrait", "Classical European portraiture", "Contemporary Black excellence"]
+  }
+]
+```
+
+*(Note: artists 8–50 follow the same DNA pattern — built programmatically in Task 1C using the inspiration database.)*
+
+**Step 4: Commit all new config files**
+
+```bash
+git add atlas-art-factory/config/
+git commit -m "feat(art-factory): artist DNA configs — inspirations (25+), style clusters (7), DNA-enhanced artists"
+```
+
+---
+
+### Task 1C: DNA prompt builder module
+
+**Files:**
+- Create: `atlas-art-factory/engines/4-ai-artist/dna-prompt-builder.js`
+- Create: `atlas-art-factory/tests/dna-prompt-builder.test.js`
+
+**Step 1: Write failing test**
+
+```javascript
+// atlas-art-factory/tests/dna-prompt-builder.test.js
+const DNAPromptBuilder = require('../engines/4-ai-artist/dna-prompt-builder');
+const config = require('../core/config');
+
+describe('DNAPromptBuilder', () => {
+  let builder;
+
+  beforeAll(() => {
+    builder = new DNAPromptBuilder(config.artists, config.artistInspirations, config.styleClusters);
+  });
+
+  test('builds DNA-enhanced prompt from artist template', () => {
+    const artist = config.artists[0]; // Neon Basquiat Beast
+    const artwork = { subject: 'lion', style: 'street art' };
+    const trendData = { keywords: ['bold wall art', 'contemporary', 'statement piece'] };
+
+    const result = builder.build(artist, artwork, trendData);
+
+    expect(result.prompt).toContain('lion');
+    expect(result.prompt).toContain('basquiat');
+    expect(result.negativePrompt).toBeDefined();
+    expect(result.metadata.inspirationSource).toBe('Jean-Michel Basquiat');
+    expect(result.metadata.styleCluster).toBe('Hedge Fund Office Luxury');
+  });
+
+  test('negative prompt excludes opposite style characteristics', () => {
+    const artist = config.artists[0];
+    const artwork = { subject: 'bear', style: 'urban' };
+    const result = builder.build(artist, artwork, {});
+
+    expect(result.negativePrompt).toContain('low quality');
+    expect(result.negativePrompt).toContain('blurry');
+  });
+
+  test('generates listing description with DNA metadata', () => {
+    const artist = config.artists[0];
+    const artwork = { title: 'Crown Lion', description: 'a lion wearing a crown', maxPrintSize: '24x36', format: 'PNG' };
+    const desc = builder.generateListingDescription(artwork, artist);
+
+    expect(desc).toContain('Jean-Michel Basquiat');
+    expect(desc).toContain('60%');
+    expect(desc).toContain('Crown Lion');
+  });
+});
+```
+
+**Step 2: Run to verify it fails**
+
+```bash
+cd atlas-art-factory && npm test -- tests/dna-prompt-builder.test.js
+```
+
+Expected: FAIL — `Cannot find module`
+
+**Step 3: Create `engines/4-ai-artist/dna-prompt-builder.js`**
+
+```javascript
+// atlas-art-factory/engines/4-ai-artist/dna-prompt-builder.js
+
+class DNAPromptBuilder {
+  constructor(artists, inspirations, styleClusters) {
+    this.artists = artists;
+    this.inspirationMap = Object.fromEntries(
+      (inspirations || []).map(i => [i.name, i])
+    );
+    this.clusterMap = Object.fromEntries(
+      (styleClusters || []).map(c => [c.name, c])
+    );
+  }
+
+  build(artist, artwork, trendData = {}) {
+    const primaryInspiration = this._getPrimaryInspiration(artist);
+    const styleCluster       = this.clusterMap[artist.styleCluster] || {};
+
+    // Start from artist's DNA template
+    let prompt = artist.enhancedPromptTemplate || '';
+
+    // Inject subject + colors
+    const colors = primaryInspiration?.colorSignatures?.primary || ['#000000', '#FFFFFF', '#FF0000'];
+    prompt = prompt
+      .replace(/\{\{animal\}\}/g, artwork.subject || 'animal')
+      .replace(/\{\{color1\}\}/g, colors[0] || '#FF0000')
+      .replace(/\{\{color2\}\}/g, colors[1] || '#000000')
+      .replace(/\{\{color3\}\}/g, colors[2] || '#FFFFFF')
+      .replace(/\{\{color4\}\}/g, colors[3] || '#FFFF00')
+      .replace(/\{\{accent_color\}\}/g, colors[0] || '#FF0000');
+
+    // Append cultural context from first DNA source
+    const culturalContext = artist.culturalReferences?.[0];
+    if (culturalContext) prompt += `, ${culturalContext} aesthetic`;
+
+    // Append top trending keywords
+    if (trendData.keywords?.length) {
+      prompt += `, ${trendData.keywords.slice(0, 3).join(', ')}`;
+    }
+
+    // Append market segment
+    if (styleCluster.marketSegment) {
+      prompt += `, ${styleCluster.marketSegment} market`;
+    }
+
+    // Quality enforcement
+    prompt += ', museum quality, 8k detail, professional art print';
+
+    return {
+      prompt,
+      negativePrompt: this._buildNegative(artist, primaryInspiration),
+      metadata: {
+        inspirationSource:  primaryInspiration?.name || 'unknown',
+        styleCluster:       artist.styleCluster || 'general',
+        culturalContext:    culturalContext || '',
+        marketSegment:      artist.marketPositioning?.segment || 'general',
+        dnaComposition:     artist.inspirationDNA?.map(d => `${d.influence}% ${d.sourceArtist}`).join(', ') || '',
+      },
+    };
+  }
+
+  generateListingDescription(artwork, artist) {
+    const primaryInspiration = this._getPrimaryInspiration(artist);
+    const styleCluster       = this.clusterMap[artist.styleCluster] || {};
+    const qualityTier        = (primaryInspiration?.culturalInfluence || 0) >= 95
+      ? 'museum-quality' : 'gallery-quality';
+
+    const dnaLines = (artist.inspirationDNA || [])
+      .map(d => `✨ ${d.influence}% ${d.sourceArtist} influence`)
+      .join('\n');
+
+    const buyerLines = (artist.marketPositioning?.targetBuyers || []).join(' • ');
+    const refLines   = (artist.culturalReferences || []).join(' • ');
+    const clusters   = (styleCluster.culturalMarkers || []).join(', ');
+
+    return `
+${artwork.title}
+
+Inspired by the iconic style of ${primaryInspiration?.name || 'contemporary masters'}, this piece features ${artwork.description || 'stunning digital art'}. 
+
+Perfect for ${clusters || 'modern spaces'}, this piece brings ${qualityTier} contemporary art to your space.
+
+STYLE DNA:
+${dnaLines}
+
+PERFECT FOR:
+${buyerLines}
+
+AS SEEN IN:
+${refLines}
+
+WHAT'S INCLUDED:
+- High-resolution ${artwork.format || 'PNG'} file
+- Multiple sizes (8x10, 11x14, 16x20, 24x36)
+- Print-ready 300 DPI
+- Instant digital download
+
+#${(primaryInspiration?.name || '').replace(/\s+/g, '')} #DigitalArt #WallArt #PrintableArt
+    `.trim();
+  }
+
+  _getPrimaryInspiration(artist) {
+    const primaryDNA = artist.inspirationDNA?.[0];
+    if (!primaryDNA) return null;
+    return this.inspirationMap[primaryDNA.sourceArtist] || null;
+  }
+
+  _buildNegative(artist, inspiration) {
+    const base = ['low quality', 'blurry', 'pixelated', 'amateur', 'watermark', 'signature', 'text overlay'];
+    const artistNegs = artist.negative_prompts || [];
+    const styleNegs  = this._oppositeStyleNegs(inspiration?.category);
+    return [...new Set([...base, ...artistNegs, ...styleNegs])].join(', ');
+  }
+
+  _oppositeStyleNegs(category) {
+    const map = {
+      pop_art:    ['realistic photo', 'gradients', 'soft edges'],
+      abstract:   ['literal', 'recognizable', 'figurative'],
+      street_art: ['polished', 'clean corporate'],
+      minimalism: ['busy', 'cluttered', 'maximalist'],
+      contemporary: ['traditional', 'classical', 'old-fashioned'],
+    };
+    return map[category] || [];
+  }
+}
+
+module.exports = DNAPromptBuilder;
+```
+
+**Step 4: Update `core/config.js` to load the new config files**
+
+Add to `config.js`:
+```javascript
+const artistInspirations = loadJson('artist-inspirations.json');
+const styleClusters      = loadJson('style-clusters.json');
+
+module.exports = {
+  silos,
+  artists,
+  aiEngines,
+  platforms,
+  artistInspirations,  // ADD
+  styleClusters,       // ADD
+  // ...rest unchanged
+};
+```
+
+**Step 5: Run tests**
+
+```bash
+cd atlas-art-factory && npm test -- tests/dna-prompt-builder.test.js
+```
+
+Expected: PASS (3 tests)
+
+**Step 6: Commit**
+
+```bash
+git add atlas-art-factory/engines/4-ai-artist/ atlas-art-factory/tests/dna-prompt-builder.test.js atlas-art-factory/core/config.js
+git commit -m "feat(art-factory): DNA prompt builder — inspiration DNA, style clusters, listing descriptions"
+```
+
+---
+
+### Task 1D: Seed artist inspirations + style clusters into PostgreSQL
+
+**Files:**
+- Modify: `atlas-art-factory/database/seed.js`
+- Modify: `atlas-art-factory/tests/seed.test.js`
+
+**Step 1: Add failing tests**
+
+```javascript
+// Add to tests/seed.test.js:
+test('artist inspirations are seeded', async () => {
+  const r = await query('SELECT COUNT(*) AS n FROM artist_inspirations');
+  expect(parseInt(r.rows[0].n)).toBeGreaterThanOrEqual(8);
+});
+
+test('style clusters are seeded', async () => {
+  const r = await query('SELECT COUNT(*) AS n FROM style_clusters');
+  expect(parseInt(r.rows[0].n)).toBeGreaterThanOrEqual(5);
+});
+
+test('Warhol has cultural influence 100', async () => {
+  const r = await query("SELECT cultural_influence FROM artist_inspirations WHERE name = 'Andy Warhol'");
+  expect(r.rows[0]?.cultural_influence).toBe(100);
+});
+```
+
+**Step 2: Update `database/seed.js`**
+
+Add two new seed functions:
+
+```javascript
+const { artistInspirations, styleClusters } = require('../core/config');
+
+async function seedArtistInspirations() {
+  for (const inspiration of artistInspirations) {
+    await query(`
+      INSERT INTO artist_inspirations
+        (name, category, era, style_characteristics, color_signatures,
+         composition_patterns, market_value_tier, cultural_influence, atlas_application)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      ON CONFLICT DO NOTHING
+    `, [
+      inspiration.name,
+      inspiration.category,
+      inspiration.era || null,
+      JSON.stringify(inspiration.styleCharacteristics || {}),
+      JSON.stringify(inspiration.colorSignatures || {}),
+      JSON.stringify(inspiration.compositionPatterns || {}),
+      inspiration.marketValueTier || null,
+      inspiration.culturalInfluence || null,
+      JSON.stringify(inspiration.atlasApplication || {}),
+    ]);
+  }
+  console.log(`✅ Seeded ${artistInspirations.length} artist inspirations`);
+}
+
+async function seedStyleClusters() {
+  for (const cluster of styleClusters) {
+    await query(`
+      INSERT INTO style_clusters
+        (cluster_name, description, market_segment, target_platforms,
+         avg_price_point, cultural_markers, key_characteristics)
+      VALUES ($1,$2,$3,$4,$5,$6,$7)
+      ON CONFLICT (cluster_name) DO NOTHING
+    `, [
+      cluster.name,
+      cluster.description,
+      cluster.marketSegment,
+      cluster.targetPlatforms,
+      cluster.avgPricePoint,
+      JSON.stringify(cluster.culturalMarkers || []),
+      JSON.stringify(cluster.keyCharacteristics || {}),
+    ]);
+  }
+  console.log(`✅ Seeded ${styleClusters.length} style clusters`);
+}
+
+// Add to seed() function:
+async function seed() {
+  await seedSilos();
+  await seedArtists();
+  await seedArtistInspirations();  // NEW
+  await seedStyleClusters();       // NEW
+  await closePool();
+}
+```
+
+**Step 3: Re-run seed**
+
+```bash
+cd atlas-art-factory && npm run seed
+```
+
+Expected:
+```
+✅ Seeded 50 silos
+✅ Seeded 50 AI artists
+✅ Seeded 25 artist inspirations
+✅ Seeded 7 style clusters
+```
+
+**Step 4: Run all tests**
+
+```bash
+cd atlas-art-factory && npm test
+```
+
+Expected: all tests PASS.
+
+**Step 5: Commit**
+
+```bash
+git add atlas-art-factory/database/seed.js atlas-art-factory/tests/seed.test.js
+git commit -m "feat(art-factory): seed artist inspirations + style clusters into postgres"
+```
