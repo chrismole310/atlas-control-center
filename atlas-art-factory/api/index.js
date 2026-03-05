@@ -1,95 +1,133 @@
 'use strict';
 
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+
 const express = require('express');
 const cors = require('cors');
-const { query } = require('../core/database');
+const { query, closePool } = require('../core/database');
 const { createLogger } = require('../core/logger');
 
 const logger = createLogger('api');
+const app = express();
 
-function createApp() {
-  const app = express();
-  app.use(cors());
-  app.use(express.json());
+app.use(cors());
+app.use(express.json());
 
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'atlas-art-factory', timestamp: new Date().toISOString() });
-  });
+// ─── Health ───────────────────────────────────────────────────────────────────
 
-  app.get('/api/silos', async (req, res) => {
-    try {
-      const r = await query('SELECT * FROM silos ORDER BY priority DESC');
-      res.json(r.rows);
-    } catch (err) {
-      logger.error('GET /api/silos failed', { error: err.message });
-      res.status(500).json({ error: err.message });
-    }
-  });
+app.get('/health', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected', ts: new Date().toISOString() });
+  } catch (err) {
+    res.status(503).json({ status: 'error', error: err.message });
+  }
+});
 
-  app.get('/api/artists', async (req, res) => {
-    try {
-      const r = await query('SELECT * FROM ai_artists ORDER BY performance_score DESC NULLS LAST');
-      res.json(r.rows);
-    } catch (err) {
-      logger.error('GET /api/artists failed', { error: err.message });
-      res.status(500).json({ error: err.message });
-    }
-  });
+// ─── Silos ────────────────────────────────────────────────────────────────────
 
-  app.get('/api/stats', async (req, res) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const [artworks, listings, revenue, opportunities] = await Promise.all([
-        query("SELECT COUNT(*) AS n FROM artworks WHERE created_at::date = $1", [today]),
-        query("SELECT COUNT(*) AS n FROM listings"),
-        query("SELECT COALESCE(SUM(net_revenue),0) AS total FROM sales WHERE sale_date::date = $1", [today]),
-        query("SELECT COUNT(*) AS n FROM market_opportunities WHERE status = 'active'"),
-      ]);
-      res.json({
-        artworks_today: parseInt(artworks.rows[0].n),
-        listings_total: parseInt(listings.rows[0].n),
-        revenue_today: parseFloat(revenue.rows[0].total),
-        opportunities: parseInt(opportunities.rows[0].n),
-        target: 200,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err) {
-      logger.error('GET /api/stats failed', { error: err.message });
-      res.status(500).json({ error: err.message });
-    }
-  });
+app.get('/api/silos', async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT * FROM silos ORDER BY priority DESC, name'
+    );
+    res.json({ silos: result.rows, count: result.rows.length });
+  } catch (err) {
+    logger.error('GET /api/silos failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
-  app.get('/api/artworks', async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit) || 50;
-      const r = await query('SELECT * FROM artworks ORDER BY created_at DESC LIMIT $1', [limit]);
-      res.json(r.rows);
-    } catch (err) {
-      logger.error('GET /api/artworks failed', { error: err.message });
-      res.status(500).json({ error: err.message });
-    }
-  });
+app.get('/api/silos/:id', async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT * FROM silos WHERE id = $1',
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    logger.error('GET /api/silos/:id failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
-  app.get('/api/opportunities', async (req, res) => {
-    try {
-      const r = await query("SELECT * FROM market_opportunities WHERE status='active' ORDER BY opportunity_rank ASC LIMIT 20");
-      res.json(r.rows);
-    } catch (err) {
-      logger.error('GET /api/opportunities failed', { error: err.message });
-      res.status(500).json({ error: err.message });
-    }
-  });
+// ─── Artists ──────────────────────────────────────────────────────────────────
 
-  return app;
-}
+app.get('/api/artists', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT a.*, s.name AS silo_name
+       FROM ai_artists a
+       LEFT JOIN silos s ON a.silo_id = s.id
+       ORDER BY a.name`
+    );
+    res.json({ artists: result.rows, count: result.rows.length });
+  } catch (err) {
+    logger.error('GET /api/artists failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/artists/:id', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT a.*, s.name AS silo_name
+       FROM ai_artists a
+       LEFT JOIN silos s ON a.silo_id = s.id
+       WHERE a.id = $1`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    logger.error('GET /api/artists/:id failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+
+app.get('/api/stats', async (req, res) => {
+  try {
+    const [siloCount, artistCount, artworkCount, listingCount] = await Promise.all([
+      query('SELECT COUNT(*) AS cnt FROM silos'),
+      query('SELECT COUNT(*) AS cnt FROM ai_artists'),
+      query('SELECT COUNT(*) AS cnt FROM artworks'),
+      query('SELECT COUNT(*) AS cnt FROM listings'),
+    ]);
+
+    res.json({
+      silos: parseInt(siloCount.rows[0].cnt),
+      artists: parseInt(artistCount.rows[0].cnt),
+      artworks: parseInt(artworkCount.rows[0].cnt),
+      listings: parseInt(listingCount.rows[0].cnt),
+      ts: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.error('GET /api/stats failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Server ───────────────────────────────────────────────────────────────────
+
+const PORT = parseInt(process.env.PORT || '3001');
 
 function startServer() {
-  const { PORT } = require('../core/config');
-  const app = createApp();
-  app.listen(PORT, () => {
-    logger.info(`Atlas Art Factory API running on port ${PORT}`);
+  return new Promise((resolve) => {
+    const server = app.listen(PORT, () => {
+      logger.info(`Art Factory API listening on port ${PORT}`);
+      resolve(server);
+    });
   });
-  return app;
 }
 
-module.exports = { createApp, startServer };
+module.exports = { app, startServer, closePool };
+
+if (require.main === module) {
+  startServer().catch((err) => {
+    logger.error('Failed to start server', { error: err.message });
+    process.exit(1);
+  });
+}
