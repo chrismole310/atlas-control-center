@@ -28,9 +28,9 @@ describe('rankOpportunities', () => {
     // 1. demand_scores SELECT — 3 qualifying rows (already ordered desc by DB)
     query.mockResolvedValueOnce({
       rows: [
-        { keyword: 'nursery art',    demand_score: '90', competition_count: '30',  avg_price: '14.99', trend_direction: 'rising', saturation_level: '10' },
-        { keyword: 'boho print',     demand_score: '80', competition_count: '120', avg_price: '18.00', trend_direction: 'stable', saturation_level: '25' },
-        { keyword: 'abstract lines', demand_score: '70', competition_count: '300', avg_price: '12.00', trend_direction: 'falling', saturation_level: '60' },
+        { keyword: 'nursery art',    demand_score: '90', competition_count: '30',  saturation_level: '10' },
+        { keyword: 'boho print',     demand_score: '80', competition_count: '120', saturation_level: '25' },
+        { keyword: 'abstract lines', demand_score: '70', competition_count: '300', saturation_level: '60' },
       ],
     });
 
@@ -172,6 +172,15 @@ describe('getRecommendedPrice', () => {
 
     const price = await getRecommendedPrice('bad data niche');
     expect(price).toBe(14.99);
+  });
+
+  test('returns correct median when prices are returned in non-sorted order', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ price: 30 }, { price: 10 }, { price: 20 }],
+    });
+
+    const price = await getRecommendedPrice('unsorted niche');
+    expect(price).toBe(20);
   });
 });
 
