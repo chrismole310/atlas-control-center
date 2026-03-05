@@ -28,10 +28,13 @@ async function buildPackage(artwork, formatFiles, mockupFiles, options = {}) {
 
     archive.pipe(output);
 
+    let fileCount = 0;
+
     // Add format files under "print-formats/" folder in zip
     for (const fmt of formatFiles) {
       if (fmt.file_path && fs.existsSync(fmt.file_path)) {
         archive.file(fmt.file_path, { name: `print-formats/${fmt.name}.png` });
+        fileCount++;
       }
     }
 
@@ -39,18 +42,20 @@ async function buildPackage(artwork, formatFiles, mockupFiles, options = {}) {
     for (const mockup of mockupFiles) {
       if (mockup.file_path && fs.existsSync(mockup.file_path)) {
         archive.file(mockup.file_path, { name: `mockups/${mockup.template_id}.png` });
+        fileCount++;
       }
     }
 
     output.on('close', () => {
       resolve({
         zip_path: zipPath,
-        file_count: archive.pointer() > 0 ? formatFiles.length + mockupFiles.length : 0,
+        file_count: fileCount,
         size_bytes: archive.pointer(),
       });
     });
 
     archive.on('error', (err) => {
+      logger.error(`Package build failed for artwork ${artwork.id}`, { error: err.message });
       reject(new Error(`Package build failed for artwork ${artwork.id}: ${err.message}`));
     });
 

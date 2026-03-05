@@ -98,7 +98,20 @@ test('buildPackage resolves with zip_path and size_bytes', async () => {
 
   expect(result).toHaveProperty('zip_path');
   expect(result).toHaveProperty('size_bytes', 1024);
-  expect(result).toHaveProperty('file_count');
+  expect(result).toHaveProperty('file_count', 4);
+});
+
+test('buildPackage file_count reflects only files that exist on disk', async () => {
+  // Make existsSync return false for some files so they are skipped
+  fs.existsSync.mockReturnValue(false);
+
+  const result = await buildPackage(sampleArtwork, sampleFormats, sampleMockups);
+
+  // No files passed the existsSync guard, so file_count must be less than the total input count
+  expect(result.file_count).toBeLessThan(sampleFormats.length + sampleMockups.length);
+  expect(result.file_count).toBe(0);
+  // archive.file should never have been called
+  expect(mockArchive.file).not.toHaveBeenCalled();
 });
 
 test('buildPackage rejects on archive error', async () => {
