@@ -15,7 +15,7 @@ const MOCKUPS_DIR = path.join(__dirname, '../../storage/mockups');
  * @returns {Promise<{file_path, template_id, width, height}>}
  */
 async function placeArtInRoom(artworkPath, templateId, options = {}) {
-  const { generateRoomScene, getTemplate } = require('./room-templates');
+  const { getRoomBackgroundPath, getTemplate } = require('./room-templates');
 
   const template = getTemplate(templateId);
   if (!template) throw new Error(`Unknown template: ${templateId}`);
@@ -23,10 +23,10 @@ async function placeArtInRoom(artworkPath, templateId, options = {}) {
   const az = template.artZone;
 
   try {
-    // 1. Get room scene buffer
-    const roomBuffer = generateRoomScene(templateId);
+    // 1. Load room background photo from disk
+    const backgroundPath = getRoomBackgroundPath(templateId);
 
-    // 2. Resize artwork to fit the art zone (maintaining aspect ratio within the zone)
+    // 2. Resize artwork to fit the art zone (maintaining aspect ratio)
     const artworkResized = await sharp(artworkPath)
       .resize(az.width, az.height, { fit: 'inside', withoutEnlargement: false })
       .toBuffer();
@@ -40,13 +40,13 @@ async function placeArtInRoom(artworkPath, templateId, options = {}) {
     const artX = az.x + Math.floor((az.width - artW) / 2);
     const artY = az.y + Math.floor((az.height - artH) / 2);
 
-    // 5. Composite: room scene + artwork overlay
+    // 5. Composite: real room photo + artwork overlay
     const outputId = options.outputId || `mockup_${templateId}_${Date.now()}`;
     const outputPath = path.join(MOCKUPS_DIR, `${outputId}.png`);
 
     fs.mkdirSync(MOCKUPS_DIR, { recursive: true });
 
-    await sharp(Buffer.from(roomBuffer))
+    await sharp(backgroundPath)
       .composite([
         { input: artworkResized, top: artY, left: artX }
       ])
@@ -60,6 +60,7 @@ async function placeArtInRoom(artworkPath, templateId, options = {}) {
       height: template.canvasHeight,
     };
   } catch (err) {
+    logger.error(`Mockup failed for template ${templateId}`, { error: err.message });
     throw new Error(`Failed to place art in ${templateId}: ${err.message}`);
   }
 }

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "living-room",
+    "label": "Living Room",
+    "file": "living-room.png",
+    "canvasWidth": 1360,
+    "canvasHeight": 768,
+    "artZone": {
+      "x": 517,
+      "y": 115,
+      "width": 354,
+      "height": 346
+    }
+  },
+  {
+    "id": "bedroom",
+    "label": "Bedroom",
+    "file": "bedroom.png",
+    "canvasWidth": 1360,
+    "canvasHeight": 768,
+    "artZone": {
+      "x": 476,
+      "y": 61,
+      "width": 381,
+      "height": 323
+    }
+  },
+  {
+    "id": "office",
+    "label": "Home Office",
+    "file": "office.png",
+    "canvasWidth": 1360,
+    "canvasHeight": 768,
+    "artZone": {
+      "x": 490,
+      "y": 77,
+      "width": 367,
+      "height": 338
+    }
+  },
+  {
+    "id": "nursery",
+    "label": "Nursery",
+    "file": "nursery.png",
+    "canvasWidth": 1360,
+    "canvasHeight": 768,
+    "artZone": {
+      "x": 503,
+      "y": 92,
+      "width": 367,
+      "height": 330
+    }
+  },
+  {
+    "id": "bathroom",
+    "label": "Bathroom",
+    "file": "bathroom.png",
+    "canvasWidth": 1360,
+    "canvasHeight": 768,
+    "artZone": {
+      "x": 748,
+      "y": 115,
+      "width": 299,
+      "height": 307
+    }
+  }
+]
