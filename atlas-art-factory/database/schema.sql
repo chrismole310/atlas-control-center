@@ -394,9 +394,9 @@ CREATE TABLE IF NOT EXISTS style_clusters (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-ALTER TABLE artworks
-    ADD COLUMN IF NOT EXISTS inspiration_dna_id INTEGER REFERENCES artist_inspirations(id),
-    ADD COLUMN IF NOT EXISTS style_cluster_id INTEGER REFERENCES style_clusters(id);
+-- NOTE: ALTER TABLE for artworks (inspiration_dna_id, style_cluster_id) is
+-- handled in database/migrate.js to keep it idempotent and separate from
+-- the main CREATE TABLE block.
 
 -- ============================================
 -- MODEL DISCOVERY (Engine 9)
