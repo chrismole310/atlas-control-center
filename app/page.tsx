@@ -238,11 +238,11 @@ export default function Dashboard() {
       description: "Audiobooks & podcasts",
       icon: Headphones,
       gradient: "from-orange-500 to-yellow-600",
-      status: "building",
+      status: "active",
       revenue: "$0",
       badge: null,
       meta: null,
-      href: "#"
+      href: "/audio-works"
     },
     {
       id: "print-factory",
