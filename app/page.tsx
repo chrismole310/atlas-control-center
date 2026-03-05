@@ -161,6 +161,18 @@ export default function Dashboard() {
       href: "/pdf-art"
     },
     {
+      id: "art-factory",
+      name: "Art Factory",
+      description: "AI art empire — 200 artworks/day",
+      icon: Palette,
+      gradient: "from-indigo-500 to-violet-600",
+      status: "building",
+      revenue: "50 silos",
+      badge: { label: "NEW", color: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" },
+      meta: "50 silos · 50 artists · 6 platforms",
+      href: "/art-factory"
+    },
+    {
       id: "intelligence",
       name: "Atlas Intelligence",
       description: "Apify-powered market research — Etsy trends, IG leads, TikTok viral analysis",
