@@ -106,7 +106,7 @@ describe('processArtworkMockups', () => {
       artwork_id: sampleArtwork.id,
       mockups: sampleMockups,
       formats: sampleFormats,
-      zip_path: samplePackage.zip_path,
+      packagePath: samplePackage.zip_path,
       file_count: samplePackage.file_count,
       size_bytes: samplePackage.size_bytes,
     });

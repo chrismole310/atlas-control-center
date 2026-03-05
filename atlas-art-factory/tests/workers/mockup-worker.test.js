@@ -67,4 +67,12 @@ describe('startMockupWorker', () => {
     expect(eventNames).toContain('failed');
     expect(eventNames).toContain('stalled');
   });
+
+  test('startMockupWorker registers completed event handler', () => {
+    const queue = startMockupWorker();
+
+    const onCalls = queue.on.mock.calls;
+    const eventNames = onCalls.map(([event]) => event);
+    expect(eventNames).toContain('completed');
+  });
 });

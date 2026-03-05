@@ -13,6 +13,7 @@ const { runDailyBatch } = require('../engines/4-ai-artist/index');
 const { runMockupBatch } = require('../engines/5-mockup-generation/index');
 const { runDistribution } = require('../engines/distribution/index');
 const { runAnalytics } = require('../engines/analytics/index');
+const { startMockupWorker } = require('./workers/mockup-worker');
 
 const logger = createLogger('orchestrator');
 
@@ -43,13 +44,7 @@ function registerProcessors() {
     return result;
   });
 
-  const mockupQueue = getQueue(QUEUE_NAMES.MOCKUP_GENERATION);
-  mockupQueue.process(async (job) => {
-    logger.info('Processing mockup generation job', { jobId: job.id });
-    const result = await runMockupBatch();
-    logger.info('Mockup generation job complete', result);
-    return result;
-  });
+  startMockupWorker();
 
   const distributionQueue = getQueue(QUEUE_NAMES.DISTRIBUTION);
   distributionQueue.process(async (job) => {

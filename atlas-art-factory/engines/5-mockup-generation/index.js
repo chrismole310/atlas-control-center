@@ -18,7 +18,7 @@ const logger = createLogger('mockup-pipeline');
  *
  * @param {Object} artwork - { id, master_image_path, title } (from artworks table)
  * @param {Object} options - { outputPrefix }
- * @returns {Promise<{artwork_id, mockups, formats, zip_path, file_count, size_bytes}>}
+ * @returns {Promise<{artwork_id, mockups, formats, packagePath, file_count, size_bytes}>}
  */
 async function processArtworkMockups(artwork, options = {}) {
   const outputPrefix = options.outputPrefix || String(artwork.id);
@@ -43,10 +43,18 @@ async function processArtworkMockups(artwork, options = {}) {
   );
 
   // 4. Update artwork status in DB
-  await query(
-    "UPDATE artworks SET status = 'mockup_ready', updated_at = NOW() WHERE id = $1",
-    [artwork.id]
-  );
+  try {
+    await query(
+      "UPDATE artworks SET status = 'mockup_ready', updated_at = NOW() WHERE id = $1",
+      [artwork.id]
+    );
+  } catch (dbErr) {
+    logger.error('Failed to update artwork status after successful mockup generation', {
+      artworkId: artwork.id,
+      error: dbErr.message,
+    });
+    throw dbErr;
+  }
 
   logger.info('Mockup processing complete', { artworkId: artwork.id, ...packageResult });
 
@@ -55,7 +63,7 @@ async function processArtworkMockups(artwork, options = {}) {
     artwork_id: artwork.id,
     mockups: mockupResults,
     formats: formatResults,
-    zip_path: packageResult.zip_path,
+    packagePath: packageResult.zip_path,
     file_count: packageResult.file_count,
     size_bytes: packageResult.size_bytes,
   };
@@ -63,19 +71,25 @@ async function processArtworkMockups(artwork, options = {}) {
 
 /**
  * Run batch mockup processing for all artworks with status = 'generated'.
- * @param {Object} options - { limit=50 }
+ * @param {Object} options - { limit=50, batchSize } (batchSize takes precedence over limit)
  * @returns {Promise<{processed, errors, elapsed}>}
  */
 async function runMockupBatch(options = {}) {
-  const limit = options.limit || 50;
+  const limit = options.batchSize != null ? options.batchSize : (options.limit != null ? options.limit : 50);
   const startTime = Date.now();
 
   logger.info('Starting mockup batch', { limit });
 
-  const result = await query(
-    "SELECT id, master_image_path, title FROM artworks WHERE status = 'generated' LIMIT $1",
-    [limit]
-  );
+  let result;
+  try {
+    result = await query(
+      "SELECT id, master_image_path, title FROM artworks WHERE status = 'generated' LIMIT $1",
+      [limit]
+    );
+  } catch (dbErr) {
+    logger.error('Failed to fetch artworks for mockup batch', { error: dbErr.message });
+    throw dbErr;
+  }
 
   const artworks = result.rows;
   let processed = 0;

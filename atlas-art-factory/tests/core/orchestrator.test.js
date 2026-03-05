@@ -9,6 +9,11 @@ jest.mock('../../engines/5-mockup-generation/index', () => ({
   processArtworkMockups: jest.fn().mockResolvedValue({ artwork_id: 1 }),
 }));
 
+// Mock the mockup worker so the orchestrator can call startMockupWorker()
+jest.mock('../../core/workers/mockup-worker', () => ({
+  startMockupWorker: jest.fn(),
+}));
+
 // Mock Bull queues to avoid real Redis calls in unit tests
 jest.mock('../../core/queue', () => {
   const mockAdd = jest.fn().mockResolvedValue({ id: 'mock-job-id' });
@@ -40,11 +45,13 @@ jest.mock('../../core/database', () => ({
 }));
 
 const { getQueue } = require('../../core/queue');
+const { startMockupWorker } = require('../../core/workers/mockup-worker');
 const {
   dispatchScraping,
   dispatchMarketIntelligence,
   dispatchImageGeneration,
   dispatchAnalytics,
+  registerProcessors,
   runDailyCycle,
 } = require('../../core/orchestrator');
 
@@ -52,7 +59,12 @@ describe('Orchestrator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset the mockAdd to return a new resolved value each time
-    getQueue.mockReturnValue({ add: jest.fn().mockResolvedValue({ id: 'mock-job-id' }), name: 'mock-queue' });
+    getQueue.mockReturnValue({
+      add: jest.fn().mockResolvedValue({ id: 'mock-job-id' }),
+      process: jest.fn(),
+      on: jest.fn(),
+      name: 'mock-queue',
+    });
   });
 
   test('dispatchScraping adds a job to the trend-scraping queue', async () => {
@@ -94,5 +106,10 @@ describe('Orchestrator', () => {
     const result = await runDailyCycle();
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
+  });
+
+  test('registerProcessors calls startMockupWorker', () => {
+    registerProcessors();
+    expect(startMockupWorker).toHaveBeenCalled();
   });
 });
