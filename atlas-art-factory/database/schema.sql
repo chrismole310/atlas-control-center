@@ -394,6 +394,10 @@ CREATE TABLE IF NOT EXISTS style_clusters (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_artist_inspirations_name ON artist_inspirations (name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_ai_artist_dna ON ai_artist_dna (ai_artist_id, inspiration_source_id);
+
 -- NOTE: ALTER TABLE for artworks (inspiration_dna_id, style_cluster_id) is
 -- handled in database/migrate.js to keep it idempotent and separate from
 -- the main CREATE TABLE block.
