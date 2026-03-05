@@ -51,7 +51,7 @@ async function getRecommendedPrice(keyword) {
   const rows = result.rows;
   if (!rows.length) return DEFAULT_PRICE;
 
-  const prices = rows.map(r => parseFloat(r.price)).filter(p => !isNaN(p) && p > 0);
+  const prices = rows.map(r => parseFloat(r.price)).filter(p => !isNaN(p) && p > 0).sort((a, b) => a - b);
   if (!prices.length) return DEFAULT_PRICE;
 
   const mid = Math.floor(prices.length / 2);
@@ -133,7 +133,7 @@ async function rankOpportunities() {
 
   // 1. Read qualifying demand scores
   const demandResult = await query(`
-    SELECT keyword, demand_score, competition_count, avg_price, trend_direction, saturation_level
+    SELECT keyword, demand_score, competition_count, saturation_level
     FROM demand_scores
     WHERE demand_score >= $1
     ORDER BY demand_score DESC
@@ -151,74 +151,78 @@ async function rankOpportunities() {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const { keyword, demand_score, competition_count, avg_price, trend_direction, saturation_level } = row;
-    const rank = i + 1;
+    try {
+      const { keyword, demand_score, competition_count, saturation_level } = row;
+      const rank = i + 1;
 
-    // Compute enriched fields in parallel
-    const [recommendedPrice, topKeywords, recommendedStyle] = await Promise.all([
-      getRecommendedPrice(keyword),
-      getTopKeywords(keyword, 10),
-      getRecommendedStyle(keyword),
-    ]);
+      // Compute enriched fields in parallel
+      const [recommendedPrice, topKeywords, recommendedStyle] = await Promise.all([
+        getRecommendedPrice(keyword),
+        getTopKeywords(keyword, 10),
+        getRecommendedStyle(keyword),
+      ]);
 
-    // Determine competition level from competition_count
-    const competitionCount = parseInt(competition_count) || 0;
-    let competitionLevel;
-    if (competitionCount < 50) {
-      competitionLevel = 'low';
-    } else if (competitionCount < 200) {
-      competitionLevel = 'medium';
-    } else {
-      competitionLevel = 'high';
+      // Determine competition level from competition_count
+      const competitionCount = parseInt(competition_count) || 0;
+      let competitionLevel;
+      if (competitionCount < 50) {
+        competitionLevel = 'low';
+      } else if (competitionCount < 200) {
+        competitionLevel = 'medium';
+      } else {
+        competitionLevel = 'high';
+      }
+
+      // Derive profit_potential from demand_score and price
+      const profitPotential = parseFloat(((parseFloat(demand_score) / 100) * recommendedPrice).toFixed(2));
+
+      // trend_strength from saturation_level (inverse — lower saturation = higher strength)
+      const trendStrength = parseFloat(saturation_level) > 0
+        ? parseFloat((100 - Math.min(100, parseFloat(saturation_level))).toFixed(2))
+        : 50;
+
+      // Upsert into market_opportunities — delete existing niche entry then insert
+      await query(`
+        DELETE FROM market_opportunities WHERE niche = $1
+      `, [keyword]);
+
+      await query(`
+        INSERT INTO market_opportunities
+          (niche, demand_score, competition_level, profit_potential, trend_strength,
+           recommended_price, recommended_styles, recommended_keywords, opportunity_rank,
+           status, identified_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', NOW(), NOW())
+      `, [
+        keyword,
+        demand_score,
+        competitionLevel,
+        profitPotential,
+        trendStrength,
+        recommendedPrice,
+        [recommendedStyle],
+        topKeywords,
+        rank,
+      ]);
+
+      opportunities.push({
+        niche: keyword,
+        demand_score: parseFloat(demand_score),
+        competition_level: competitionLevel,
+        profit_potential: profitPotential,
+        trend_strength: trendStrength,
+        recommended_price: recommendedPrice,
+        recommended_styles: [recommendedStyle],
+        recommended_keywords: topKeywords,
+        opportunity_rank: rank,
+        status: 'active',
+      });
+    } catch (err) {
+      console.error(`Failed to rank keyword "${row.keyword}"`, err);
     }
-
-    // Derive profit_potential from demand_score and price
-    const profitPotential = parseFloat(((parseFloat(demand_score) / 100) * recommendedPrice).toFixed(2));
-
-    // trend_strength from saturation_level (inverse — lower saturation = higher strength)
-    const trendStrength = parseFloat(saturation_level) > 0
-      ? parseFloat((100 - Math.min(100, parseFloat(saturation_level))).toFixed(2))
-      : 50;
-
-    // Upsert into market_opportunities — delete existing niche entry then insert
-    await query(`
-      DELETE FROM market_opportunities WHERE niche = $1
-    `, [keyword]);
-
-    await query(`
-      INSERT INTO market_opportunities
-        (niche, demand_score, competition_level, profit_potential, trend_strength,
-         recommended_price, recommended_styles, recommended_keywords, opportunity_rank,
-         status, identified_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', NOW(), NOW())
-    `, [
-      keyword,
-      demand_score,
-      competitionLevel,
-      profitPotential,
-      trendStrength,
-      recommendedPrice,
-      [recommendedStyle],
-      topKeywords,
-      rank,
-    ]);
-
-    opportunities.push({
-      niche: keyword,
-      demand_score: parseFloat(demand_score),
-      competition_level: competitionLevel,
-      profit_potential: profitPotential,
-      trend_strength: trendStrength,
-      recommended_price: recommendedPrice,
-      recommended_styles: [recommendedStyle],
-      recommended_keywords: topKeywords,
-      opportunity_rank: rank,
-      status: 'active',
-    });
   }
 
   logger.info(`Ranked and stored ${opportunities.length} opportunities`);
   return opportunities;
 }
 
-module.exports = { rankOpportunities, getRecommendedPrice, getTopKeywords };
+module.exports = { rankOpportunities, getRecommendedPrice, getTopKeywords, getRecommendedStyle };

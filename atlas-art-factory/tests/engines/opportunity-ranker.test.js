@@ -3,7 +3,7 @@
 jest.mock('../../core/database', () => ({ query: jest.fn() }));
 
 const { query } = require('../../core/database');
-const { rankOpportunities, getRecommendedPrice, getTopKeywords } = require('../../engines/2-market-intelligence/opportunity-ranker');
+const { rankOpportunities, getRecommendedPrice, getTopKeywords, getRecommendedStyle } = require('../../engines/2-market-intelligence/opportunity-ranker');
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -96,6 +96,42 @@ describe('rankOpportunities', () => {
     expect(result[1].competition_level).toBe('medium');
     // High competition (300)
     expect(result[2].competition_level).toBe('high');
+
+    // recommended_styles assertions — nursery art: detected 'watercolor' from title
+    expect(result[0].recommended_styles).toEqual(['watercolor']);
+    // boho print: detected 'minimalist' from title (first STYLE_KEYWORDS match wins)
+    expect(result[1].recommended_styles).toEqual(['minimalist']);
+    // abstract lines: no data → DEFAULT_STYLE
+    expect(result[2].recommended_styles).toEqual(['modern']);
+  });
+
+  test('skips failing keyword and returns partial results', async () => {
+    // demand_scores SELECT — 2 qualifying rows
+    query.mockResolvedValueOnce({
+      rows: [
+        { keyword: 'nursery art', demand_score: '90', competition_count: '30', saturation_level: '10' },
+        { keyword: 'boho print',  demand_score: '80', competition_count: '120', saturation_level: '25' },
+      ],
+    });
+
+    // nursery art: all 5 sub-queries succeed
+    query.mockResolvedValueOnce({ rows: [{ price: 20 }] });           // getRecommendedPrice
+    query.mockResolvedValueOnce({ rows: [{ tags: ['baby'], keywords: ['nursery'] }] }); // getTopKeywords
+    query.mockResolvedValueOnce({ rows: [{ title: 'watercolor art', tags: [], style: null, engagement: 100 }] }); // getRecommendedStyle
+    query.mockResolvedValueOnce({ rowCount: 0 });                     // DELETE
+    query.mockResolvedValueOnce({ rowCount: 1 });                     // INSERT
+
+    // boho print: DELETE query throws
+    query.mockResolvedValueOnce({ rows: [{ price: 15 }] });           // getRecommendedPrice
+    query.mockResolvedValueOnce({ rows: [] });                        // getTopKeywords
+    query.mockResolvedValueOnce({ rows: [] });                        // getRecommendedStyle
+    query.mockRejectedValueOnce(new Error('DB error on DELETE'));      // DELETE throws
+
+    const result = await rankOpportunities();
+
+    // Should not throw and should return the one successful keyword
+    expect(result.length).toBe(1);
+    expect(result[0].niche).toBe('nursery art');
   });
 });
 
@@ -180,5 +216,43 @@ describe('getTopKeywords', () => {
 
     const tags = await getTopKeywords('empty niche', 10);
     expect(tags).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getRecommendedStyle
+// ---------------------------------------------------------------------------
+
+describe('getRecommendedStyle', () => {
+  test('returns explicit style from style column when present', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { title: 'some nursery art', tags: [], style: 'watercolor', engagement: 800 },
+        { title: 'another listing',  tags: [], style: 'boho',       engagement: 400 },
+      ],
+    });
+
+    const style = await getRecommendedStyle('nursery art');
+    // First row has an explicit style — should be returned immediately
+    expect(style).toBe('watercolor');
+  });
+
+  test('falls back to detecting style from title text when style column is null', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { title: 'beautiful minimalist wall print', tags: ['wall', 'art'], style: null, engagement: 600 },
+      ],
+    });
+
+    const style = await getRecommendedStyle('wall print');
+    // No explicit style — detectStyle should find 'minimalist' in the title
+    expect(style).toBe('minimalist');
+  });
+
+  test('returns DEFAULT_STYLE (modern) when no data is returned', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const style = await getRecommendedStyle('unknown niche');
+    expect(style).toBe('modern');
   });
 });
