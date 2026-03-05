@@ -7,6 +7,10 @@ const { createLogger } = require('../../core/logger');
 const logger = createLogger('quality-control');
 
 const QUALITY_THRESHOLD = 80; // minimum score to pass QC
+const CLIP_MODEL_PATH = 'openai/clip-vit-large-patch14'; // full Replicate path
+const CLIP_MODEL_NAME = 'clip-vit-large-patch14';        // short name returned to callers
+
+const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
 /**
  * Score an artwork against its prompt using CLIP via Replicate.
@@ -19,8 +23,6 @@ async function scoreArtwork(filePath, prompt) {
     throw new Error(`Artwork file not found: ${filePath}`);
   }
 
-  const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
-
   // Read file as base64
   const imageData = fs.readFileSync(filePath);
   const base64Image = `data:image/png;base64,${imageData.toString('base64')}`;
@@ -28,7 +30,7 @@ async function scoreArtwork(filePath, prompt) {
   let output;
   try {
     output = await replicate.run(
-      'openai/clip-vit-large-patch14',
+      CLIP_MODEL_PATH,
       {
         input: {
           image: base64Image,
@@ -56,7 +58,7 @@ async function scoreArtwork(filePath, prompt) {
   return {
     score,
     passes: score >= QUALITY_THRESHOLD,
-    model: 'clip-vit-large-patch14',
+    model: CLIP_MODEL_NAME,
   };
 }
 

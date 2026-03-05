@@ -17,7 +17,10 @@ const Replicate = require('replicate');
 jest.mock('fs');
 const fs = require('fs');
 
-let mockRun;
+// mockRun is defined at module scope so the module-scope Replicate instance
+// (constructed at require time) shares the same reference.
+const mockRun = jest.fn().mockResolvedValue([{ label: 'test prompt', score: 0.92 }]);
+Replicate.mockImplementation(() => ({ run: mockRun }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -25,9 +28,8 @@ beforeEach(() => {
   fs.existsSync.mockReturnValue(true);
   // Default: readFileSync returns a buffer-like object
   fs.readFileSync.mockReturnValue(Buffer.from('fake-image-data'));
-  // Default: Replicate run resolves with a high score
-  mockRun = jest.fn().mockResolvedValue([{ label: 'test prompt', score: 0.92 }]);
-  Replicate.mockImplementation(() => ({ run: mockRun }));
+  // Reset mockRun to default behaviour without reassigning the variable
+  mockRun.mockResolvedValue([{ label: 'test prompt', score: 0.92 }]);
 });
 
 const { scoreArtwork, batchScoreArtworks, QUALITY_THRESHOLD } = require('../../engines/4-ai-artist/quality-control');
