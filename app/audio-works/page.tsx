@@ -38,6 +38,20 @@ interface Transcript {
   chapters: Chapter[]
 }
 
+interface Voice {
+  name: string
+  label: string
+  gender: "male" | "female"
+  installed: boolean
+}
+
+interface GeneratingBook {
+  id: number
+  title: string
+  author?: string
+  status: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const formatTime = (s: number) => {
@@ -75,11 +89,19 @@ export default function AudioWorksPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [regenLoading, setRegenLoading] = useState<number | null>(null)
   const [regenMsg, setRegenMsg] = useState<string | null>(null)
+  const [voices, setVoices] = useState<Voice[]>([])
+  const [showGenerateForm, setShowGenerateForm] = useState(false)
+  const [genFile, setGenFile] = useState<File | null>(null)
+  const [genVoice, setGenVoice] = useState("en_US-lessac-medium")
+  const [genLoading, setGenLoading] = useState(false)
+  const [genMsg, setGenMsg] = useState<string | null>(null)
+  const [generatingBooks, setGeneratingBooks] = useState<GeneratingBook[]>([])
 
   const waveformRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<WaveSurfer | null>(null)
   const transcriptRef = useRef<HTMLDivElement>(null)
   const regenTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Load audiobook list ──────────────────────────────────────────────────────
   const loadAudiobooks = useCallback(async () => {
@@ -88,6 +110,7 @@ export default function AudioWorksPage() {
       if (res.ok) {
         const data = await res.json()
         setAudiobooks(data.audiobooks ?? [])
+        setGeneratingBooks(data.generating ?? [])
       }
     } catch {
       // silently ignore network errors
@@ -99,6 +122,26 @@ export default function AudioWorksPage() {
   useEffect(() => {
     loadAudiobooks()
   }, [loadAudiobooks])
+
+  // ── Load voice list ──────────────────────────────────────────────────────────
+  const loadVoices = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/v1/voices`)
+      if (res.ok) {
+        const data = await res.json()
+        setVoices(data.voices ?? [])
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => { loadVoices() }, [loadVoices])
+
+  // ── Poll while books are generating ──────────────────────────────────────────
+  useEffect(() => {
+    if (generatingBooks.length === 0) return
+    const interval = setInterval(loadAudiobooks, 10000)
+    return () => clearInterval(interval)
+  }, [generatingBooks.length, loadAudiobooks])
 
   // ── Load transcript when a book is selected ──────────────────────────────────
   useEffect(() => {
@@ -220,6 +263,37 @@ export default function AudioWorksPage() {
     regenTimersRef.current.push(setTimeout(() => loadAudiobooks(), 5000))
   }
 
+  // ── Generate new audiobook ────────────────────────────────────────────────────
+  const handleGenerate = async () => {
+    if (!genFile) return
+    setGenLoading(true)
+    setGenMsg("Uploading...")
+    try {
+      const form = new FormData()
+      form.append("file", genFile)
+      form.append("voice", genVoice)
+      const res = await fetch(`${API}/api/v1/audiobooks/generate`, {
+        method: "POST",
+        body: form,
+      })
+      if (!res.ok) throw new Error("Generate failed")
+      const data = await res.json()
+      setGenMsg(
+        data.status === "downloading_voice"
+          ? "Downloading voice model, then generating..."
+          : "Generation started!"
+      )
+      setShowGenerateForm(false)
+      setGenFile(null)
+      loadAudiobooks()
+    } catch {
+      setGenMsg("Error — check that backend is running")
+    } finally {
+      setGenLoading(false)
+      regenTimersRef.current.push(setTimeout(() => setGenMsg(null), 5000))
+    }
+  }
+
   // ── Selected audiobook object ────────────────────────────────────────────────
   const selected = audiobooks.find(a => a.id === selectedId) ?? null
 
@@ -248,7 +322,76 @@ export default function AudioWorksPage() {
         {/* ── LEFT: Library sidebar ────────────────────────────────────────────── */}
         <div className="w-72 flex-shrink-0 bg-slate-900 border-r border-slate-800 overflow-y-auto">
           <div className="px-4 pt-4 pb-2">
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Library</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Library</p>
+              <button
+                onClick={() => setShowGenerateForm(v => !v)}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+              >
+                + New
+              </button>
+            </div>
+
+            {showGenerateForm && (
+              <div className="mb-3 p-3 rounded-lg border border-slate-700 bg-slate-800/60 flex flex-col gap-2">
+                {/* File picker */}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Manuscript file</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".rtf,.docx,.txt,.odt"
+                    className="hidden"
+                    onChange={e => setGenFile(e.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full text-xs py-1.5 px-2 rounded border border-slate-600 bg-slate-700 hover:bg-slate-600 text-slate-300 text-left truncate transition-colors"
+                  >
+                    {genFile ? genFile.name : "Choose file (.rtf, .docx, .txt)"}
+                  </button>
+                </div>
+
+                {/* Voice dropdown */}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Voice</label>
+                  <select
+                    value={genVoice}
+                    onChange={e => setGenVoice(e.target.value)}
+                    className="w-full text-xs py-1.5 px-2 rounded border border-slate-600 bg-slate-700 text-slate-200 transition-colors"
+                  >
+                    <optgroup label="Female">
+                      {voices.filter(v => v.gender === "female").map(v => (
+                        <option key={v.name} value={v.name}>
+                          {v.label}{v.installed ? "" : " ⬇"}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Male">
+                      {voices.filter(v => v.gender === "male").map(v => (
+                        <option key={v.name} value={v.name}>
+                          {v.label}{v.installed ? "" : " ⬇"}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <p className="text-xs text-slate-500 mt-0.5">⬇ = will download first (~50-150MB)</p>
+                </div>
+
+                {/* Generate button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={!genFile || genLoading}
+                  className="w-full text-xs py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold transition-colors"
+                >
+                  {genLoading ? "Working..." : "Generate Audiobook"}
+                </button>
+
+                {genMsg && (
+                  <p className="text-xs text-indigo-400 animate-pulse">{genMsg}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {loading && (
@@ -258,9 +401,27 @@ export default function AudioWorksPage() {
           {!loading && audiobooks.length === 0 && (
             <div className="px-4 py-12 flex flex-col items-center gap-3 text-slate-500">
               <Headphones className="w-10 h-10 opacity-30" />
-              <p className="text-sm text-center">No audiobooks yet. Generate one from the Publishing page.</p>
+              <p className="text-sm text-center">No audiobooks yet. Click &quot;+ New&quot; to generate one.</p>
             </div>
           )}
+
+          {generatingBooks.map(book => (
+            <div
+              key={`gen-${book.id}`}
+              className="mx-3 mb-2 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-3"
+            >
+              <p className="font-semibold text-slate-300 text-sm leading-snug mb-0.5 truncate">
+                {book.title}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                <span className="text-xs text-indigo-400">
+                  {book.status === "generating_audio" ? "Generating..." :
+                   book.status === "failed" ? "❌ Failed" : "Queued..."}
+                </span>
+              </div>
+            </div>
+          ))}
 
           {audiobooks.map(book => {
             const badge = qcBadge(book.qc_status)
@@ -361,6 +522,13 @@ export default function AudioWorksPage() {
                   <span className="text-xs text-slate-400">Voice: {selected.voice}</span>
                   <span className="text-xs text-slate-400">{formatSize(selected.file_size)}</span>
                   <span className="text-xs text-slate-400">{formatTRT(selected.duration_minutes)}</span>
+                  <a
+                    href={`${API}/api/v1/audiobooks/${selected.id}/download`}
+                    download
+                    className="flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
+                  >
+                    ⬇ Download
+                  </a>
                 </div>
 
                 {regenMsg && (
