@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const { query, closePool } = require('../core/database');
 const { createLogger } = require('../core/logger');
+const { detectTrendAlerts } = require('../engines/2-market-intelligence/trend-alerts');
 
 const logger = createLogger('api');
 const app = express();
@@ -106,6 +107,31 @@ app.get('/api/stats', async (req, res) => {
     });
   } catch (err) {
     logger.error('GET /api/stats failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Intelligence ─────────────────────────────────────────────────────────────
+
+app.get('/api/intelligence', async (req, res) => {
+  try {
+    const [opportunitiesResult, demandResult, alerts] = await Promise.all([
+      query(
+        'SELECT * FROM market_opportunities ORDER BY opportunity_rank ASC LIMIT 20'
+      ),
+      query(
+        'SELECT keyword, demand_score FROM demand_scores ORDER BY demand_score DESC LIMIT 10'
+      ),
+      detectTrendAlerts(),
+    ]);
+
+    res.json({
+      opportunities: opportunitiesResult.rows,
+      alerts,
+      topDemandScores: demandResult.rows,
+    });
+  } catch (err) {
+    logger.error('GET /api/intelligence failed', { error: err.message });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
