@@ -80,10 +80,10 @@ async function optimizeTags({ siloId, artwork }) {
   const { rows } = await query(
     `SELECT keyword, demand_score
      FROM demand_scores
-     WHERE silo_id = $1 AND demand_score > 50
+     WHERE demand_score > 50
      ORDER BY demand_score DESC
      LIMIT 13`,
-    [siloId]
+    []
   );
 
   const promptWords = (artwork.prompt || '')
