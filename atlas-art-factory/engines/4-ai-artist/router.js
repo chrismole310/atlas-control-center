@@ -1,6 +1,17 @@
 'use strict';
 
+const { createLogger } = require('../../core/logger');
 const routingRules = require('../../config/ai-engines.json').routing_rules;
+
+const logger = createLogger('router');
+
+const ENGINE = {
+  FLUX_SCHNELL: 'flux-schnell',
+  FLUX_DEV: 'flux-dev',
+  DALLE3: 'dalle3',
+  IDEOGRAM: 'ideogram',
+  SDXL: 'sdxl',
+};
 
 // Map engine names to their generator functions.
 // sdxl is not yet implemented; set to null and handle below.
@@ -9,7 +20,7 @@ const GENERATORS = {
   'flux-dev':     require('./engines/flux').generateFluxDev,
   'dalle3':       require('./engines/dalle3').generate,
   'ideogram':     require('./engines/ideogram').generate,
-  'sdxl':         null,
+  [ENGINE.SDXL]:  null,
 };
 
 /**
@@ -39,7 +50,7 @@ function selectEngine(job) {
  * Route job to the correct generator and call it.
  *
  * If the selected engine is 'sdxl' (not yet implemented), falls back to
- * 'flux-schnell' with a console warning.
+ * 'flux-schnell' with a logger warning.
  *
  * @param {Object} job - same as selectEngine input, plus { options: {width, height, outputId} }
  * @returns {Promise<{id, file_path, engine, width, height, prompt, url}>}
@@ -48,8 +59,8 @@ async function routeAndGenerate(job) {
   let engine = selectEngine(job);
 
   // SDXL is not yet implemented — fall back to flux-schnell
-  if (engine === 'sdxl' || GENERATORS[engine] === null) {
-    console.warn(`[router] Engine "${engine}" is not yet implemented. Falling back to flux-schnell.`);
+  if (engine === ENGINE.SDXL || GENERATORS[engine] === null) {
+    logger.warn('Engine not yet implemented, falling back to flux-schnell', { engine, fallback: 'flux-schnell' });
     engine = 'flux-schnell';
   }
 
@@ -61,7 +72,11 @@ async function routeAndGenerate(job) {
   const prompt = (job && job.prompt) || '';
   const options = (job && job.options) || {};
 
-  return generator(prompt, options);
+  try {
+    return await generator(prompt, options);
+  } catch (err) {
+    throw new Error(`Router: generator "${engine}" failed — ${err.message}`);
+  }
 }
 
-module.exports = { selectEngine, routeAndGenerate };
+module.exports = { selectEngine, routeAndGenerate, ENGINE };
