@@ -79,6 +79,7 @@ export default function AudioWorksPage() {
   const waveformRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<WaveSurfer | null>(null)
   const transcriptRef = useRef<HTMLDivElement>(null)
+  const regenTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   // ── Load audiobook list ──────────────────────────────────────────────────────
   const loadAudiobooks = useCallback(async () => {
@@ -86,7 +87,7 @@ export default function AudioWorksPage() {
       const res = await fetch(`${API}/api/v1/audiobooks`)
       if (res.ok) {
         const data = await res.json()
-        setAudiobooks(data)
+        setAudiobooks(data.audiobooks ?? [])
       }
     } catch {
       // silently ignore network errors
@@ -108,7 +109,7 @@ export default function AudioWorksPage() {
     setTranscript(null)
     fetch(`${API}/api/v1/audiobooks/${selectedId}/transcript`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setTranscript(data) })
+      .then(data => { if (data?.transcript) setTranscript(data.transcript) })
       .catch(() => {})
   }, [selectedId])
 
@@ -166,6 +167,11 @@ export default function AudioWorksPage() {
     }
   }, [currentParaIndex])
 
+  // ── Cleanup regen timers on unmount ──────────────────────────────────────────
+  useEffect(() => {
+    return () => { regenTimersRef.current.forEach(clearTimeout) }
+  }, [])
+
   // ── Playback controls ────────────────────────────────────────────────────────
   const handlePlayPause = () => {
     wavesurferRef.current?.playPause()
@@ -205,11 +211,11 @@ export default function AudioWorksPage() {
     } catch {
       // ignore
     }
-    setTimeout(() => {
+    regenTimersRef.current.push(setTimeout(() => {
       setRegenLoading(null)
       setRegenMsg(null)
-    }, 2000)
-    setTimeout(() => loadAudiobooks(), 5000)
+    }, 2000))
+    regenTimersRef.current.push(setTimeout(() => loadAudiobooks(), 5000))
   }
 
   // ── Selected audiobook object ────────────────────────────────────────────────
