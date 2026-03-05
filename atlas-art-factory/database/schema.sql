@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS scraped_trends (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_scraped_trends_platform_url ON scraped_trends (platform, listing_url);
 CREATE INDEX IF NOT EXISTS idx_trends_platform ON scraped_trends(platform);
 CREATE INDEX IF NOT EXISTS idx_trends_keywords ON scraped_trends USING GIN(keywords);
 CREATE INDEX IF NOT EXISTS idx_trends_scraped_at ON scraped_trends(scraped_at);
