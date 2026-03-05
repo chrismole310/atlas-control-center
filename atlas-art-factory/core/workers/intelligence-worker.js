@@ -22,11 +22,9 @@ function startIntelligenceWorker() {
   queue.process(1, async (job) => {
     logger.info('Processing market intelligence job', { jobId: job.id, data: job.data });
 
-    job.progress(0);
-
-    job.progress(25);
+    job.progress(10);
     const result = await runMarketIntelligence();
-    job.progress(50);
+    job.progress(90);
 
     logger.info('Market intelligence job complete', { jobId: job.id, result });
     job.progress(100);

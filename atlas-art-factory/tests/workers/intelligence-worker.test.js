@@ -68,5 +68,6 @@ describe('startIntelligenceWorker', () => {
     const onCalls = queue.on.mock.calls;
     const eventNames = onCalls.map(([event]) => event);
     expect(eventNames).toContain('failed');
+    expect(eventNames).toContain('stalled');
   });
 });

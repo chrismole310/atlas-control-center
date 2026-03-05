@@ -8,7 +8,7 @@ const { query } = require('./database');
 const { createLogger } = require('./logger');
 
 const { runTrendScraper } = require('../engines/trend-scraper/index');
-const { runMarketIntelligence } = require('../engines/market-intel/index');
+const { runMarketIntelligence } = require('../engines/2-market-intelligence/index');
 const { runImageProduction } = require('../engines/image-production/index');
 const { runMockupGeneration } = require('../engines/mockup-generator/index');
 
