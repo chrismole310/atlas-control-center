@@ -1,10 +1,12 @@
 """Atlas Publishing Engine — Audiobook FastAPI routes."""
 import json
+import re
 import shutil
 import sys
+import urllib.request
 from pathlib import Path
 
-from fastapi import BackgroundTasks, HTTPException, Request, Response
+from fastapi import BackgroundTasks, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 
 _REPO = Path(__file__).parent.parent
@@ -13,6 +15,44 @@ if str(_REPO) not in sys.path:
 
 from publishing.database import get_conn, init_db
 from publishing.audiobook import generate_audiobook
+
+# ── Voice catalog ──────────────────────────────────────────────────────────────
+_HF_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0"
+_VOICES_DIR = _REPO / "publishing" / "voices"
+
+_VOICES = [
+    {"name": "en_US-amy-medium",         "label": "Amy (US)",    "gender": "female", "hf_path": "en/en_US/amy/medium"},
+    {"name": "en_US-arctic-medium",      "label": "Arctic (US)", "gender": "female", "hf_path": "en/en_US/arctic/medium"},
+    {"name": "en_US-jenny_dioco-medium", "label": "Jenny (US)",  "gender": "female", "hf_path": "en/en_US/jenny_dioco/medium"},
+    {"name": "en_GB-alba-medium",        "label": "Alba (GB)",   "gender": "female", "hf_path": "en/en_GB/alba/medium"},
+    {"name": "en_US-lessac-medium",      "label": "Lessac (US)", "gender": "male",   "hf_path": "en/en_US/lessac/medium"},
+    {"name": "en_US-ryan-medium",        "label": "Ryan (US)",   "gender": "male",   "hf_path": "en/en_US/ryan/medium"},
+    {"name": "en_US-joe-medium",         "label": "Joe (US)",    "gender": "male",   "hf_path": "en/en_US/joe/medium"},
+    {"name": "en_GB-alan-medium",        "label": "Alan (GB)",   "gender": "male",   "hf_path": "en/en_GB/alan/medium"},
+]
+
+
+def _is_voice_installed(name: str) -> bool:
+    return (_VOICES_DIR / f"{name}.onnx").exists()
+
+
+def _download_voice(name: str, hf_path: str) -> None:
+    """Download .onnx + .onnx.json for a Piper voice from HuggingFace."""
+    _VOICES_DIR.mkdir(exist_ok=True)
+    for ext in [".onnx", ".onnx.json"]:
+        fname = f"{name}{ext}"
+        dest = _VOICES_DIR / fname
+        if not dest.exists():
+            url = f"{_HF_BASE}/{hf_path}/{fname}"
+            print(f"[Voices] Downloading {fname} from {url}")
+            urllib.request.urlretrieve(url, str(dest))
+            print(f"[Voices] Saved {fname}")
+
+
+def _download_and_generate(book_id: int, voice: str, hf_path: str) -> None:
+    """Download voice model then generate audiobook (for chaining in BackgroundTask)."""
+    _download_voice(voice, hf_path)
+    generate_audiobook(book_id, voice)
 
 
 def _run_qc(audiobook_id: int) -> dict:
@@ -132,25 +172,26 @@ def register_audiobook_routes(app):
 
     @app.get("/api/v1/audiobooks")
     def list_audiobooks():
-        """List all audiobook versions with book metadata and quick QC status."""
         with get_conn() as conn:
             rows = conn.execute(
                 """
                 SELECT
-                    av.id,
-                    av.book_id,
-                    av.voice,
-                    av.duration_minutes,
-                    av.file_path,
-                    av.file_size,
-                    b.title,
-                    b.author,
-                    b.slug,
-                    b.status      AS book_status,
-                    b.cover_art_path
+                    av.id, av.book_id, av.voice, av.duration_minutes,
+                    av.file_path, av.file_size,
+                    b.title, b.author, b.slug,
+                    b.status AS book_status, b.cover_art_path
                 FROM pub_audiobook_versions av
                 JOIN pub_books b ON b.id = av.book_id
                 ORDER BY av.id DESC
+                """
+            ).fetchall()
+            generating = conn.execute(
+                """
+                SELECT id, title, author, slug, status
+                FROM pub_books
+                WHERE status IN ('generating_audio', 'formatted', 'failed')
+                AND id NOT IN (SELECT book_id FROM pub_audiobook_versions)
+                ORDER BY id DESC
                 """
             ).fetchall()
 
@@ -160,7 +201,7 @@ def register_audiobook_routes(app):
             record["qc_status"] = _quick_qc_status(record["file_path"])
             result.append(record)
 
-        return {"audiobooks": result}
+        return {"audiobooks": result, "generating": [dict(r) for r in generating]}
 
     @app.get("/api/v1/audiobooks/{audiobook_id}/stream")
     def audiobook_stream(audiobook_id: int, request: Request):
@@ -302,6 +343,99 @@ def register_audiobook_routes(app):
             "audiobook_id": audiobook_id,
             "book_id": book_id,
         }
+
+    # ── ROUTE: List available voices ──────────────────────────────────────────
+    @app.get("/api/v1/voices")
+    def list_voices():
+        return {
+            "voices": [
+                {**v, "installed": _is_voice_installed(v["name"])}
+                for v in _VOICES
+            ]
+        }
+
+    # ── ROUTE: Download a voice model ─────────────────────────────────────────
+    @app.post("/api/v1/voices/{voice_name}/download")
+    def download_voice(voice_name: str, background_tasks: BackgroundTasks):
+        voice_info = next((v for v in _VOICES if v["name"] == voice_name), None)
+        if not voice_info:
+            raise HTTPException(404, f"Unknown voice: {voice_name}")
+        if _is_voice_installed(voice_name):
+            return {"status": "already_installed"}
+        background_tasks.add_task(_download_voice, voice_name, voice_info["hf_path"])
+        return {"status": "downloading"}
+
+    # ── ROUTE: Generate new audiobook from uploaded file ──────────────────────
+    @app.post("/api/v1/audiobooks/generate")
+    async def generate_new_audiobook(
+        background_tasks: BackgroundTasks,
+        file: UploadFile = File(...),
+        voice: str = Form("en_US-lessac-medium"),
+    ):
+        uploads_dir = _REPO / "publishing" / "uploads"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+
+        stem = Path(file.filename or "untitled").stem
+        safe_stem = re.sub(r"[^\w\s-]", "", stem).strip()
+        title = re.sub(r"[\s_-]+", " ", safe_stem).title()
+        base_slug = re.sub(r"[\s_]+", "-", safe_stem.lower())
+        base_slug = re.sub(r"-+", "-", base_slug).strip("-")
+
+        # Ensure unique slug
+        slug = base_slug
+        suffix = Path(file.filename or "file.txt").suffix.lower() or ".txt"
+        with get_conn() as conn:
+            n = 1
+            while conn.execute("SELECT 1 FROM pub_books WHERE slug=?", (slug,)).fetchone():
+                slug = f"{base_slug}-{n}"
+                n += 1
+
+        save_path = uploads_dir / f"{slug}{suffix}"
+        content = await file.read()
+        save_path.write_bytes(content)
+
+        with get_conn() as conn:
+            cur = conn.execute(
+                "INSERT INTO pub_books (title, slug, manuscript_path, status) VALUES (?,?,?,?)",
+                (title, slug, str(save_path), "formatted"),
+            )
+            book_id = cur.lastrowid
+
+        voice_info = next((v for v in _VOICES if v["name"] == voice), None)
+        if voice_info and not _is_voice_installed(voice):
+            background_tasks.add_task(
+                _download_and_generate, book_id, voice, voice_info["hf_path"]
+            )
+            return {"book_id": book_id, "title": title, "status": "downloading_voice"}
+
+        background_tasks.add_task(generate_audiobook, book_id, voice)
+        return {"book_id": book_id, "title": title, "status": "generating"}
+
+    # ── ROUTE: Download M4B as attachment ─────────────────────────────────────
+    @app.get("/api/v1/audiobooks/{audiobook_id}/download")
+    def audiobook_download(audiobook_id: int):
+        with get_conn() as conn:
+            row = conn.execute(
+                """
+                SELECT av.*, b.title FROM pub_audiobook_versions av
+                JOIN pub_books b ON b.id = av.book_id
+                WHERE av.id=?
+                """,
+                (audiobook_id,),
+            ).fetchone()
+        if not row:
+            raise HTTPException(404, "Audiobook not found")
+        path = Path(row["file_path"])
+        if not path.exists():
+            raise HTTPException(404, "Audio file not found on disk")
+        safe_title = re.sub(r'[<>:"/\\|?*]', "", row["title"]) or "audiobook"
+        filename = f"{safe_title}.m4b"
+        return FileResponse(
+            str(path),
+            media_type="audio/mp4",
+            filename=filename,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
     @app.post("/api/v1/audiobooks/{audiobook_id}/regenerate")
     async def regenerate_audiobook(audiobook_id: int, background_tasks: BackgroundTasks):
