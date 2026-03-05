@@ -20,7 +20,7 @@ const TREND_THRESHOLD = 80;
  * @returns {number} rise percentage (e.g., 0.25 for 25% rise), or 0 if avg is 0
  */
 function computeRisePct(currentScore, avgScore) {
-  if (!avgScore || avgScore === 0) return 0;
+  if (avgScore === 0) return 0;
   return (currentScore - avgScore) / avgScore;
 }
 
@@ -45,21 +45,29 @@ async function detectTrendAlerts(options = {}) {
   const threshold = options.threshold !== undefined ? options.threshold : 0.20;
   const minScore  = options.minScore  !== undefined ? options.minScore  : 30;
 
-  // Fetch qualifying rows: trend_direction = 'rising', score above both minScore
-  // and ALERT_MIN_SCORE, joined to silos for silo_name.
-  const result = await query(`
-    SELECT
-      ds.keyword,
-      ds.demand_score,
-      s.name AS silo_name
-    FROM demand_scores ds
-    LEFT JOIN silo_keywords sk ON sk.keyword = ds.keyword
-    LEFT JOIN silos         s  ON s.id = sk.silo_id
-    WHERE ds.trend_direction = 'rising'
-      AND ds.demand_score   >= $1
-      AND ds.demand_score   >= $2
-    ORDER BY ds.demand_score DESC
-  `, [Math.max(minScore, ALERT_MIN_SCORE), ALERT_MIN_SCORE]);
+  // Fetch qualifying rows: trend_direction = 'rising', score above minScore,
+  // ALERT_MIN_SCORE, and TREND_THRESHOLD — all enforced in SQL to avoid
+  // returning rows that would be silently discarded in JS.
+  let result;
+  try {
+    result = await query(`
+      SELECT
+        ds.keyword,
+        ds.demand_score,
+        s.name AS silo_name
+      FROM demand_scores ds
+      LEFT JOIN silo_keywords sk ON sk.keyword = ds.keyword
+      LEFT JOIN silos         s  ON s.id = sk.silo_id
+      WHERE ds.trend_direction = 'rising'
+        AND ds.demand_score   >= $1
+        AND ds.demand_score   >= $2
+        AND ds.demand_score   >= $3
+      ORDER BY ds.demand_score DESC
+    `, [Math.max(minScore, ALERT_MIN_SCORE), ALERT_MIN_SCORE, TREND_THRESHOLD]);
+  } catch (err) {
+    logger.error('Failed to query demand_scores for trend alerts', err);
+    return [];
+  }
 
   const alerts = [];
 

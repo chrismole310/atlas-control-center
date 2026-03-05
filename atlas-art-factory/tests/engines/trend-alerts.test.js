@@ -69,19 +69,9 @@ describe('detectTrendAlerts', () => {
     // because its score is below TREND_THRESHOLD=80.
     // We test this by passing a high minScore option AND having the DB row's score
     // be below that value (the WHERE clause uses Math.max(minScore, ALERT_MIN_SCORE)).
-    query.mockResolvedValueOnce({
-      rows: [
-        // score=90 qualifies (>= TREND_THRESHOLD)
-        { keyword: 'high score art', demand_score: '90', silo_name: 'abstract' },
-      ],
-    });
-
-    // minScore=100 means the WHERE clause sends $1=100 to DB; in the mock all rows
-    // are returned regardless, but score=90 < 100 — wait, we validate that the
-    // engine passes the right param. Instead, let's mock DB returning a low score
-    // row and rely on the TREND_THRESHOLD guard in JS.
-    // Reset and mock with a score < TREND_THRESHOLD=80 but >= ALERT_MIN_SCORE=65
-    query.mockReset();
+    // Mock DB returning a score < TREND_THRESHOLD=80 but >= ALERT_MIN_SCORE=65.
+    // With TREND_THRESHOLD now in the SQL WHERE clause, the DB would exclude this
+    // row; in the mock all rows are returned so the JS post-filter also catches it.
     query.mockResolvedValueOnce({
       rows: [
         { keyword: 'low score art', demand_score: '70', silo_name: null },
@@ -101,5 +91,13 @@ describe('detectTrendAlerts', () => {
 
     expect(Array.isArray(alerts)).toBe(true);
     expect(alerts).toHaveLength(0);
+  });
+
+  test('returns [] and does not throw when DB query rejects', async () => {
+    query.mockRejectedValueOnce(new Error('DB error'));
+
+    const alerts = await detectTrendAlerts();
+
+    expect(alerts).toEqual([]);
   });
 });
