@@ -34,6 +34,13 @@ describe('generateVariationPrompts', () => {
       expect(p).toContain('golden retriever portrait');
     });
   });
+
+  test('handles empty base prompt without throwing', () => {
+    const prompts = generateVariationPrompts('', {});
+    expect(prompts).toHaveLength(3);
+    const unique = new Set(prompts);
+    expect(unique.size).toBe(3);
+  });
 });
 
 describe('generateVariations', () => {
