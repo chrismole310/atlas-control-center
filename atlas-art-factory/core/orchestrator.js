@@ -14,6 +14,7 @@ const { runMockupBatch } = require('../engines/5-mockup-generation/index');
 const { runDistribution } = require('../engines/distribution/index');
 const { runAnalytics } = require('../engines/analytics/index');
 const { startMockupWorker } = require('./workers/mockup-worker');
+const { runModelDiscovery } = require('../engines/model-discovery/index');
 
 const logger = createLogger('orchestrator');
 
@@ -59,6 +60,14 @@ function registerProcessors() {
     logger.info('Processing analytics job', { jobId: job.id });
     const result = await runAnalytics();
     logger.info('Analytics job complete', result);
+    return result;
+  });
+
+  const discoveryQueue = getQueue(QUEUE_NAMES.MODEL_DISCOVERY);
+  discoveryQueue.process(async (job) => {
+    logger.info('Processing model discovery job', { jobId: job.id });
+    const result = await runModelDiscovery();
+    logger.info('Model discovery job complete', result);
     return result;
   });
 }
@@ -154,6 +163,16 @@ async function dispatchDistribution() {
 }
 
 /**
+ * Dispatch the weekly model discovery job.
+ */
+async function dispatchModelDiscovery() {
+  const queue = getQueue(QUEUE_NAMES.MODEL_DISCOVERY);
+  const job = await queue.add({ task: 'discover-models', triggeredAt: new Date().toISOString() });
+  logger.info('Dispatched model discovery job', { jobId: job.id });
+  return job;
+}
+
+/**
  * Run a full daily cycle (for manual trigger or testing).
  */
 async function runDailyCycle() {
@@ -181,5 +200,6 @@ module.exports = {
   dispatchAnalytics,
   dispatchMockupGeneration,
   dispatchDistribution,
+  dispatchModelDiscovery,
   runDailyCycle,
 };

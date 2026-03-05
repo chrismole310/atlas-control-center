@@ -215,6 +215,20 @@ app.get('/api/production/status', async (req, res) => {
   }
 });
 
+// ─── Model Discovery ──────────────────────────────────────────────────────────
+
+app.get('/api/models/discovered', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT * FROM discovered_models ORDER BY discovered_at DESC LIMIT 50`
+    );
+    res.json({ models: rows, count: rows.length });
+  } catch (err) {
+    logger.error('GET /api/models/discovered failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── Server ───────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT || '3001');
