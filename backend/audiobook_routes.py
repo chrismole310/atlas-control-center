@@ -179,14 +179,28 @@ def register_audiobook_routes(app):
         range_header = request.headers.get("range")
         if range_header:
             try:
-                range_val = range_header.replace("bytes=", "")
-                start_str, end_str = range_val.split("-")
+                if not range_header.startswith("bytes="):
+                    raise ValueError("bad unit")
+                range_spec = range_header[6:]
+                if "," in range_spec:
+                    # Multi-range not supported — return 416 with required Content-Range
+                    return Response(
+                        status_code=416,
+                        headers={"Content-Range": f"bytes */{file_size}"},
+                    )
+                start_str, end_str = range_spec.split("-", 1)
                 start = int(start_str)
                 end = int(end_str) if end_str else file_size - 1
             except (ValueError, TypeError):
-                raise HTTPException(416, "Invalid Range header")
+                return Response(
+                    status_code=416,
+                    headers={"Content-Range": f"bytes */{file_size}"},
+                )
             if start >= file_size or end >= file_size or start > end:
-                raise HTTPException(416, "Range Not Satisfiable")
+                return Response(
+                    status_code=416,
+                    headers={"Content-Range": f"bytes */{file_size}"},
+                )
             chunk_size = end - start + 1
             with open(path, "rb") as f:
                 f.seek(start)
@@ -275,6 +289,14 @@ def register_audiobook_routes(app):
             except Exception as exc:
                 print(f"[Audiobook] Warning: could not delete {chapters_dir}: {exc}")
 
+        # Step 5: Delete transcript.json if present
+        transcript_path = file_path.parent / "transcript.json"
+        if transcript_path.exists():
+            try:
+                transcript_path.unlink()
+            except Exception as exc:
+                print(f"[Audiobook] Warning: could not delete {transcript_path}: {exc}")
+
         return {
             "status": "deleted",
             "audiobook_id": audiobook_id,
@@ -292,6 +314,7 @@ def register_audiobook_routes(app):
                 raise HTTPException(status_code=404, detail="Audiobook not found")
 
             book_id = row["book_id"]
+            original_voice = row["voice"]
 
             # 1. Delete old audiobook version record
             conn.execute(
@@ -303,7 +326,7 @@ def register_audiobook_routes(app):
             )
 
         # 3. Trigger generate_audiobook as a background task
-        background_tasks.add_task(generate_audiobook, book_id)
+        background_tasks.add_task(generate_audiobook, book_id, original_voice)
 
         return {
             "status": "regeneration started",
