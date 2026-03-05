@@ -12,6 +12,7 @@ const { runMarketIntelligence } = require('../engines/2-market-intelligence/inde
 const { runDailyBatch } = require('../engines/4-ai-artist/index');
 const { runMockupGeneration } = require('../engines/mockup-generator/index');
 const { runDistribution } = require('../engines/distribution/index');
+const { runAnalytics } = require('../engines/analytics/index');
 
 const logger = createLogger('orchestrator');
 
@@ -55,6 +56,14 @@ function registerProcessors() {
     logger.info('Processing distribution job', { jobId: job.id });
     const result = await runDistribution();
     logger.info('Distribution job complete', result);
+    return result;
+  });
+
+  const analyticsQueue = getQueue(QUEUE_NAMES.ANALYTICS);
+  analyticsQueue.process(async (job) => {
+    logger.info('Processing analytics job', { jobId: job.id });
+    const result = await runAnalytics();
+    logger.info('Analytics job complete', result);
     return result;
   });
 }
