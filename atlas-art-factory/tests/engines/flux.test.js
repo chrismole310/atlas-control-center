@@ -4,7 +4,8 @@
 jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
   createWriteStream: jest.fn(() => ({
-    on: jest.fn(),
+    // Call 'finish' callbacks immediately so the download promise resolves
+    on: jest.fn((event, cb) => { if (event === 'finish') cb(); }),
     pipe: jest.fn(),
   })),
 }));
@@ -96,6 +97,38 @@ describe('generateFluxSchnell', () => {
       expect.objectContaining({
         input: expect.objectContaining({ width: 2400, height: 3000 }),
       })
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Error-path tests
+// ---------------------------------------------------------------------------
+
+describe('generateFluxSchnell error paths', () => {
+  test('generateFluxSchnell throws with context when replicate.run fails', async () => {
+    mockRun.mockRejectedValueOnce(new Error('API error'));
+
+    await expect(generateFluxSchnell('test prompt', { outputId: 'err_test_1' })).rejects.toThrow(
+      'FLUX generation failed'
+    );
+  });
+
+  test('generateFluxSchnell throws when download fails', async () => {
+    const https = require('https');
+    https.get.mockImplementationOnce((url, callback) => {
+      const mockResponse = {
+        pipe: jest.fn(),
+        on: jest.fn((event, handler) => {
+          if (event === 'error') handler(new Error('Network error'));
+        }),
+      };
+      callback(mockResponse);
+      return { on: jest.fn() };
+    });
+
+    await expect(generateFluxSchnell('test prompt', { outputId: 'err_test_2' })).rejects.toThrow(
+      'Network error'
     );
   });
 });

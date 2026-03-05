@@ -25,7 +25,6 @@ async function _downloadImage(url, dest) {
       response.on('end', () => {
         file.on('finish', resolve);
         file.on('error', reject);
-        resolve();
       });
       response.on('error', reject);
     });
@@ -47,9 +46,12 @@ async function _generate(model, prompt, options) {
   const width = options.width || DEFAULT_WIDTH;
   const height = options.height || DEFAULT_HEIGHT;
 
-  const output = await replicate.run(model, {
-    input: { prompt, width, height, num_outputs: 1 },
-  });
+  let output;
+  try {
+    output = await replicate.run(model, { input: { prompt, width, height, num_outputs: 1 } });
+  } catch (err) {
+    throw new Error(`FLUX generation failed for model "${model}": ${err.message}`);
+  }
 
   // output is an array of URLs; use the first one
   const imageUrl = Array.isArray(output) ? output[0] : output;
