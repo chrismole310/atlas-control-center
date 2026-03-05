@@ -1,35 +1,20 @@
-'use strict';
+const levels = { error: 0, warn: 1, info: 2, debug: 3 };
+const currentLevel = levels[process.env.LOG_LEVEL || 'info'];
 
-const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
-
-const currentLevel = LOG_LEVELS[process.env.LOG_LEVEL] ?? LOG_LEVELS.info;
-
-function log(level, module, message, data = {}) {
-  if (LOG_LEVELS[level] < currentLevel) return;
-
-  const entry = {
-    ts: new Date().toISOString(),
-    level,
-    module,
-    message,
-    ...(Object.keys(data).length > 0 ? { data } : {}),
-  };
-
-  const output = JSON.stringify(entry);
-  if (level === 'error') {
-    process.stderr.write(output + '\n');
+function log(level, component, message, data = null) {
+  if (levels[level] > currentLevel) return;
+  const ts = new Date().toISOString();
+  const line = `[${ts}] [${level.toUpperCase()}] [${component}] ${message}`;
+  if (data) {
+    console.log(line, typeof data === 'object' ? JSON.stringify(data) : data);
   } else {
-    process.stdout.write(output + '\n');
+    console.log(line);
   }
 }
 
-function createLogger(module) {
-  return {
-    debug: (msg, data) => log('debug', module, msg, data),
-    info:  (msg, data) => log('info',  module, msg, data),
-    warn:  (msg, data) => log('warn',  module, msg, data),
-    error: (msg, data) => log('error', module, msg, data),
-  };
-}
-
-module.exports = { createLogger, log };
+module.exports = {
+  info:  (c, m, d) => log('info',  c, m, d),
+  warn:  (c, m, d) => log('warn',  c, m, d),
+  error: (c, m, d) => log('error', c, m, d),
+  debug: (c, m, d) => log('debug', c, m, d),
+};
