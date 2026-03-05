@@ -60,4 +60,13 @@ describe('Logger', () => {
     const parsed = JSON.parse(written);
     expect(parsed).not.toHaveProperty('data');
   });
+
+  test('debug messages are suppressed at default info level', () => {
+    // LOG_LEVEL defaults to 'info' when not set; debug (level 0) < info (level 1) → suppressed
+    const logger = createLogger('test-module');
+    const callsBefore = stdoutSpy.mock.calls.length;
+    logger.debug('this debug message should be filtered');
+    // debug is below info threshold, so stdout should NOT have been written to
+    expect(stdoutSpy.mock.calls.length).toBe(callsBefore);
+  });
 });
