@@ -9,6 +9,7 @@ const { createLogger } = require('./logger');
 
 const { runTrendScraper } = require('../engines/trend-scraper/index');
 const { runMarketIntelligence } = require('../engines/market-intel/index');
+const { runImageProduction } = require('../engines/image-production/index');
 
 const logger = createLogger('orchestrator');
 
@@ -27,6 +28,14 @@ function registerProcessors() {
     logger.info('Processing market intelligence job', { jobId: job.id });
     const result = await runMarketIntelligence();
     logger.info('Market intelligence job complete', result);
+    return result;
+  });
+
+  const imageQueue = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
+  imageQueue.process(async (job) => {
+    logger.info('Processing image generation job', { jobId: job.id });
+    const result = await runImageProduction();
+    logger.info('Image generation job complete', result);
     return result;
   });
 }
