@@ -25,27 +25,29 @@ async function processArtworkMockups(artwork, options = {}) {
 
   logger.info('Processing mockups for artwork', { artworkId: artwork.id, title: artwork.title });
 
-  // 1. Generate 5 room scene mockups
-  const mockupResults = await generateAllMockups(artwork.master_image_path, {
-    outputPrefix: outputPrefix,
-  });
-
-  // 2. Export 6 print sizes
-  const formatResults = await exportAllSizes(artwork.master_image_path, {
-    artworkId: artwork.id,
-  });
-
-  // 3. Build ZIP package
-  const packageResult = await buildPackage(
-    { id: artwork.id, title: artwork.title },
-    formatResults,
-    mockupResults
-  );
+  // 1-3. Generate mockups, export sizes, build package
+  let mockupResults, formatResults, packageResult;
+  try {
+    mockupResults = await generateAllMockups(artwork.master_image_path, {
+      outputPrefix: outputPrefix,
+    });
+    formatResults = await exportAllSizes(artwork.master_image_path, {
+      artworkId: artwork.id,
+    });
+    packageResult = await buildPackage(
+      { id: artwork.id, title: artwork.title },
+      formatResults,
+      mockupResults
+    );
+  } catch (err) {
+    logger.error('Mockup generation pipeline failed', { artworkId: artwork.id, error: err.message });
+    throw err;
+  }
 
   // 4. Update artwork status in DB
   try {
     await query(
-      "UPDATE artworks SET status = 'mockup_ready', updated_at = NOW() WHERE id = $1",
+      "UPDATE artworks SET status = 'mockup_ready' WHERE id = $1",
       [artwork.id]
     );
   } catch (dbErr) {

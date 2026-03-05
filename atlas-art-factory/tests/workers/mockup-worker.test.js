@@ -29,6 +29,7 @@ jest.mock('../../core/queue', () => {
 });
 
 const { getQueue, QUEUE_NAMES } = require('../../core/queue');
+const { runMockupBatch } = require('../../engines/5-mockup-generation/index');
 const { startMockupWorker } = require('../../core/workers/mockup-worker');
 
 describe('startMockupWorker', () => {
@@ -74,5 +75,21 @@ describe('startMockupWorker', () => {
     const onCalls = queue.on.mock.calls;
     const eventNames = onCalls.map(([event]) => event);
     expect(eventNames).toContain('completed');
+  });
+
+  test('job handler calls runMockupBatch with job data limit', async () => {
+    const queue = startMockupWorker();
+    const handler = queue.process.mock.calls[0][1];
+    const fakeJob = { id: 'j1', data: { limit: 10 }, progress: jest.fn() };
+    await handler(fakeJob);
+    expect(runMockupBatch).toHaveBeenCalledWith({ limit: 10 });
+  });
+
+  test('job handler uses default limit when not specified', async () => {
+    const queue = startMockupWorker();
+    const handler = queue.process.mock.calls[0][1];
+    const fakeJob = { id: 'j2', data: {}, progress: jest.fn() };
+    await handler(fakeJob);
+    expect(runMockupBatch).toHaveBeenCalledWith({ limit: 50 });
   });
 });

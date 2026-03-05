@@ -89,15 +89,22 @@ async function dispatchMarketIntelligence() {
  */
 async function dispatchImageGeneration(dailyTarget = 200) {
   // schema.sql: silos uses status VARCHAR(20) DEFAULT 'active' — no is_active column
-  const silos = await query(
-    "SELECT id, name, priority FROM silos WHERE status = 'active' ORDER BY priority DESC"
-  );
+  let silos;
+  try {
+    const result = await query(
+      "SELECT id, name, priority FROM silos WHERE status = 'active' ORDER BY priority DESC"
+    );
+    silos = result.rows;
+  } catch (dbErr) {
+    logger.error('Failed to fetch active silos for image generation dispatch', { error: dbErr.message });
+    throw dbErr;
+  }
 
-  const totalPriority = silos.rows.reduce((sum, s) => sum + (s.priority || 1), 0);
+  const totalPriority = silos.reduce((sum, s) => sum + (s.priority || 1), 0);
   const queue = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
   let dispatched = 0;
 
-  for (const silo of silos.rows) {
+  for (const silo of silos) {
     const allocation = Math.round((silo.priority / totalPriority) * dailyTarget);
     if (allocation < 1) continue;
 
@@ -109,11 +116,11 @@ async function dispatchImageGeneration(dailyTarget = 200) {
       triggeredAt: new Date().toISOString(),
     });
     dispatched += allocation;
-    logger.info(`Dispatched image generation for silo ${silo.name}`, { jobId: job.id, count: allocation });
+    logger.info('Dispatched image generation for silo', { siloName: silo.name, jobId: job.id, count: allocation });
   }
 
-  logger.info(`Total image generation jobs dispatched`, { target: dailyTarget, dispatched });
-  return { target: dailyTarget, dispatched, siloCount: silos.rows.length };
+  logger.info('Total image generation jobs dispatched', { target: dailyTarget, dispatched });
+  return { target: dailyTarget, dispatched, siloCount: silos.length };
 }
 
 /**

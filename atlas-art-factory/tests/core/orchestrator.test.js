@@ -51,6 +51,8 @@ const {
   dispatchMarketIntelligence,
   dispatchImageGeneration,
   dispatchAnalytics,
+  dispatchMockupGeneration,
+  dispatchDistribution,
   registerProcessors,
   runDailyCycle,
 } = require('../../core/orchestrator');
@@ -106,6 +108,18 @@ describe('Orchestrator', () => {
     const result = await runDailyCycle();
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
+  });
+
+  test('dispatchMockupGeneration adds a job to the mockup-generation queue', async () => {
+    const job = await dispatchMockupGeneration();
+    expect(job.id).toBe('mock-job-id');
+    expect(getQueue).toHaveBeenCalledWith('mockup-generation');
+  });
+
+  test('dispatchDistribution adds a job to the distribution queue', async () => {
+    const job = await dispatchDistribution();
+    expect(job.id).toBe('mock-job-id');
+    expect(getQueue).toHaveBeenCalledWith('distribution');
   });
 
   test('registerProcessors calls startMockupWorker', () => {
