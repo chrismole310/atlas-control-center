@@ -1,0 +1,47 @@
+{
+  "platforms": {
+    "etsy": {
+      "enabled": true,
+      "type": "api",
+      "daily_limit": 50,
+      "rate_limit_ms": 2000,
+      "fee_percent": 6.5,
+      "api_version": "v3"
+    },
+    "gumroad": {
+      "enabled": true,
+      "type": "api",
+      "daily_limit": 50,
+      "rate_limit_ms": 1000,
+      "fee_percent": 10
+    },
+    "pinterest": {
+      "enabled": true,
+      "type": "api",
+      "daily_limit": 20,
+      "rate_limit_ms": 3000,
+      "fee_percent": 0
+    },
+    "redbubble": {
+      "enabled": true,
+      "type": "playwright",
+      "daily_limit": 30,
+      "rate_limit_ms": 5000,
+      "fee_percent": 20
+    },
+    "society6": {
+      "enabled": true,
+      "type": "playwright",
+      "daily_limit": 30,
+      "rate_limit_ms": 5000,
+      "fee_percent": 15
+    },
+    "creative-market": {
+      "enabled": true,
+      "type": "playwright",
+      "daily_limit": 20,
+      "rate_limit_ms": 5000,
+      "fee_percent": 30
+    }
+  }
+}

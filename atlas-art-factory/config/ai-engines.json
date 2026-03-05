@@ -1,0 +1,84 @@
+{
+  "engines": {
+    "flux-schnell": {
+      "type": "local",
+      "model": "black-forest-labs/FLUX.1-schnell",
+      "description": "Free, fast, Apache 2.0 — for high-volume batch production",
+      "cost_per_image": 0,
+      "avg_time_seconds": 3,
+      "quality_tier": "good",
+      "via": "replicate",
+      "enabled": true
+    },
+    "flux-dev": {
+      "type": "local",
+      "model": "black-forest-labs/FLUX.1-dev",
+      "description": "Free open weights — best quality local model",
+      "cost_per_image": 0,
+      "avg_time_seconds": 15,
+      "quality_tier": "excellent",
+      "via": "replicate",
+      "enabled": true
+    },
+    "sdxl": {
+      "type": "local",
+      "model": "stability-ai/sdxl",
+      "description": "Stable Diffusion XL — free fallback",
+      "cost_per_image": 0,
+      "avg_time_seconds": 8,
+      "quality_tier": "good",
+      "via": "replicate",
+      "enabled": true
+    },
+    "dalle3": {
+      "type": "api",
+      "model": "dall-e-3",
+      "description": "OpenAI DALL-E 3 — complex compositions",
+      "cost_per_image": 0.04,
+      "avg_time_seconds": 10,
+      "quality_tier": "premium",
+      "via": "openai",
+      "enabled": true
+    },
+    "ideogram": {
+      "type": "api",
+      "model": "ideogram-v2",
+      "description": "Ideogram v2 — best for typography in art",
+      "cost_per_image": 0.02,
+      "avg_time_seconds": 8,
+      "quality_tier": "excellent",
+      "via": "ideogram",
+      "enabled": true
+    },
+    "midjourney": {
+      "type": "api",
+      "model": "midjourney-v6",
+      "description": "Midjourney via GoAPI — premium quality",
+      "cost_per_image": 0.04,
+      "avg_time_seconds": 30,
+      "quality_tier": "premium",
+      "via": "goapi",
+      "enabled": false
+    }
+  },
+  "routing_rules": {
+    "typography": "ideogram",
+    "premium": "dalle3",
+    "batch": "flux-schnell",
+    "quality": "flux-dev",
+    "fallback": "sdxl"
+  },
+  "discovery": {
+    "enabled": true,
+    "sources": ["huggingface", "replicate", "fal"],
+    "benchmark_prompts": [
+      "minimalist botanical print, white background, elegant",
+      "cute nursery animals, soft watercolor, pastel",
+      "motivational quote typography, bold modern design",
+      "abstract geometric art, vibrant colors",
+      "watercolor landscape, mountains and forest"
+    ],
+    "min_quality_score": 75,
+    "run_every_days": 7
+  }
+}

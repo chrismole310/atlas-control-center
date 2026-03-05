@@ -1,0 +1,712 @@
+[
+  {
+    "id": 1, "name": "Neon Basquiat Beast", "silo": "nursery-animals",
+    "description": "Street art animals with Basquiat crown energy",
+    "inspirationDNA": [
+      { "sourceArtist": "Jean-Michel Basquiat", "influence": 60, "inheritedTraits": ["crown motifs", "graffiti energy", "text integration", "raw expression"] },
+      { "sourceArtist": "Keith Haring", "influence": 30, "inheritedTraits": ["bold outlines", "energetic lines", "accessibility"] },
+      { "sourceArtist": "KAWS", "influence": 10, "inheritedTraits": ["cartoon influence", "contemporary appeal"] }
+    ],
+    "styleCluster": "Hedge Fund Office Luxury",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} wearing three-pointed crown, basquiat neo-expressionist style, graffiti energy, raw gestural brushstrokes, {{color1}} and {{color2}} and black, text elements integrated, anatomical sketches, urban raw aesthetic, crown motif prominent, street art luxury, museum quality digital art",
+    "negative_prompts": ["low quality", "blurry", "watermark", "polished corporate", "soft edges"],
+    "marketPositioning": { "segment": "luxury_contemporary", "pricePoint": "premium", "targetBuyers": ["hedge fund offices", "luxury condos", "contemporary collectors"] },
+    "culturalReferences": ["Billions office aesthetic", "Contemporary art galleries", "Street art legitimacy"]
+  },
+  {
+    "id": 2, "name": "Pop Warhol Creatures", "silo": "botanical-prints",
+    "description": "Animals in Warhol screen print style",
+    "inspirationDNA": [
+      { "sourceArtist": "Andy Warhol", "influence": 70, "inheritedTraits": ["screen print aesthetic", "bold flat colors", "grid repetition", "commercial polish"] },
+      { "sourceArtist": "Roy Lichtenstein", "influence": 20, "inheritedTraits": ["ben-day dots", "comic book aesthetic", "bold outlines"] },
+      { "sourceArtist": "Keith Haring", "influence": 10, "inheritedTraits": ["accessibility", "pop culture appeal"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in andy warhol pop art style, screen print aesthetic, bold flat colors ({{color1}}, {{color2}}, {{color3}}), repeated 4-panel grid layout, high contrast, clean edges, no gradients, commercial polish, iconic pop art",
+    "negative_prompts": ["realistic photo", "gradients", "soft edges", "amateur"],
+    "marketPositioning": { "segment": "luxury_pop_art", "pricePoint": "high", "targetBuyers": ["corporate art buyers", "modern collectors"] },
+    "culturalReferences": ["Campbell's soup can series", "Marilyn Monroe portraits", "Factory era NYC"]
+  },
+  {
+    "id": 3, "name": "Rothko Mood Fields", "silo": "motivational-quotes",
+    "description": "Color field abstracts with Rothko emotional depth",
+    "inspirationDNA": [
+      { "sourceArtist": "Mark Rothko", "influence": 80, "inheritedTraits": ["color field", "soft edges", "luminous quality", "emotional depth"] },
+      { "sourceArtist": "Helen Frankenthaler", "influence": 15, "inheritedTraits": ["stain painting", "organic forms"] },
+      { "sourceArtist": "Gerhard Richter", "influence": 5, "inheritedTraits": ["abstract beauty", "contemporary relevance"] }
+    ],
+    "styleCluster": "Luxury Condo Minimalism",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "rothko style color field painting, soft-edged horizontal bands of {{color1}} and {{color2}}, luminous transparent layers, blurred boundaries, meditative mood, emotional depth, floating rectangles, no hard edges, contemplative atmosphere",
+    "negative_prompts": ["busy", "cluttered", "literal", "figurative", "recognizable objects"],
+    "marketPositioning": { "segment": "corporate_luxury", "pricePoint": "premium", "targetBuyers": ["corporate lobbies", "law firm offices", "luxury condos"] },
+    "culturalReferences": ["Rothko Chapel", "Seagram murals", "Abstract Expressionism"]
+  },
+  {
+    "id": 4, "name": "Banksy Urban Fauna", "silo": "minimalist-abstract",
+    "description": "Animals in Banksy stencil street art style",
+    "inspirationDNA": [
+      { "sourceArtist": "Banksy", "influence": 75, "inheritedTraits": ["stencil aesthetic", "political edge", "urban textures"] },
+      { "sourceArtist": "Shepard Fairey", "influence": 15, "inheritedTraits": ["bold graphics", "propaganda style", "high contrast"] },
+      { "sourceArtist": "Keith Haring", "influence": 10, "inheritedTraits": ["bold outlines", "accessibility"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in banksy stencil style, black and white with {{accent_color}} accent, spray paint aesthetic, weathered brick wall background, urban street art, political satire mood, high contrast stencil",
+    "negative_prompts": ["polished", "clean digital", "corporate", "soft colors"],
+    "marketPositioning": { "segment": "contemporary_urban", "pricePoint": "mid_to_high", "targetBuyers": ["millennials", "urban collectors"] },
+    "culturalReferences": ["Girl with Balloon", "Flower Thrower", "Rats series"]
+  },
+  {
+    "id": 5, "name": "Murakami Rainbow Kingdom", "silo": "bathroom-humor",
+    "description": "Superflat kawaii with Murakami joyful chaos",
+    "inspirationDNA": [
+      { "sourceArtist": "Takashi Murakami", "influence": 85, "inheritedTraits": ["superflat", "smiling flowers", "rainbow colors", "anime influence"] },
+      { "sourceArtist": "KAWS", "influence": 10, "inheritedTraits": ["cartoon appropriation", "contemporary appeal"] },
+      { "sourceArtist": "Yayoi Kusama", "influence": 5, "inheritedTraits": ["pattern obsession", "maximalism"] }
+    ],
+    "styleCluster": "Kawaii Maximalism",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in takashi murakami superflat style, smiling flower motifs surrounding, rainbow explosion colors ({{color1}}, {{color2}}, {{color3}}, {{color4}}), anime eyes, flat digital aesthetic, no shadows, pattern repetition, kawaii maximalist",
+    "negative_prompts": ["realistic", "dark", "3d render", "shadows"],
+    "marketPositioning": { "segment": "luxury_pop_culture", "pricePoint": "high", "targetBuyers": ["fashion collectors", "pop culture fans"] },
+    "culturalReferences": ["Louis Vuitton collaboration", "Superflat movement", "Anime influence in fine art"]
+  },
+  {
+    "id": 6, "name": "Kusama Dot Menagerie", "silo": "kitchen-food-art",
+    "description": "Animals with Kusama obsessive polka dots",
+    "inspirationDNA": [
+      { "sourceArtist": "Yayoi Kusama", "influence": 90, "inheritedTraits": ["polka dots everywhere", "infinite repetition", "obsessive pattern"] },
+      { "sourceArtist": "Takashi Murakami", "influence": 10, "inheritedTraits": ["pop culture accessibility", "vibrant colors"] }
+    ],
+    "styleCluster": "Kawaii Maximalism",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} completely covered in kusama polka dots, infinite dot pattern, {{color1}} dots on {{color2}} background, obsessive repetition, dots covering every surface, immersive pattern, infinity net aesthetic",
+    "negative_prompts": ["plain", "no dots", "minimalist", "boring"],
+    "marketPositioning": { "segment": "contemporary_maximalist", "pricePoint": "mid_to_high", "targetBuyers": ["Instagram collectors", "maximalist interiors"] },
+    "culturalReferences": ["Infinity Rooms", "Pumpkin sculptures", "Obsessive pattern making"]
+  },
+  {
+    "id": 7, "name": "Wiley Regal Beasts", "silo": "watercolor-landscapes",
+    "description": "Animals as royalty with Kehinde Wiley ornate backgrounds",
+    "inspirationDNA": [
+      { "sourceArtist": "Kehinde Wiley", "influence": 80, "inheritedTraits": ["ornate floral backgrounds", "classical poses", "regal dignity"] },
+      { "sourceArtist": "Amy Sherald", "influence": 15, "inheritedTraits": ["contemporary portraiture", "cultural significance"] },
+      { "sourceArtist": "Frida Kahlo", "influence": 5, "inheritedTraits": ["symbolic animal companions"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{animal}} in regal classical pose, kehinde wiley ornate style, elaborate baroque floral background pattern in {{color1}} and {{color2}}, photorealistic animal portrait, luxurious decorative elements, gold accents, vibrant ornate patterns",
+    "negative_prompts": ["cartoon", "simple background", "cheap", "low quality"],
+    "marketPositioning": { "segment": "luxury_contemporary", "pricePoint": "premium", "targetBuyers": ["luxury pet owners", "contemporary collectors"] },
+    "culturalReferences": ["Obama portrait", "Classical European portraiture", "Contemporary Black excellence"]
+  },
+  {
+    "id": 8, "name": "Van Gogh Starry Beasts", "silo": "cat-art",
+    "description": "Animals with Van Gogh swirling expressionist energy",
+    "inspirationDNA": [
+      { "sourceArtist": "Vincent van Gogh", "influence": 85, "inheritedTraits": ["swirling brushstrokes", "impasto texture", "emotional color", "expressive movement"] },
+      { "sourceArtist": "Paul Gauguin", "influence": 15, "inheritedTraits": ["bold colors", "flat forms", "tropical warmth"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{animal}} painted in van gogh post-impressionist style, thick swirling brushstrokes, impasto texture, starry night colors {{color1}} and {{color2}}, emotional movement, expressive marks, museum quality painting",
+    "negative_prompts": ["photorealistic", "smooth", "digital", "flat"],
+    "marketPositioning": { "segment": "art_lover", "pricePoint": "mid_to_high", "targetBuyers": ["art enthusiasts", "museum shop buyers", "classic art lovers"] },
+    "culturalReferences": ["Starry Night", "Sunflowers series", "Post-Impressionism"]
+  },
+  {
+    "id": 9, "name": "Picasso Cubist Creatures", "silo": "dog-art",
+    "description": "Animals fragmented through Picasso cubist lens",
+    "inspirationDNA": [
+      { "sourceArtist": "Pablo Picasso", "influence": 80, "inheritedTraits": ["geometric fragmentation", "multiple perspectives", "bold outlines"] },
+      { "sourceArtist": "Georges Braque", "influence": 20, "inheritedTraits": ["analytical cubism", "earth tones", "textured surfaces"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{animal}} in picasso cubist style, geometric fragmentation, multiple perspectives simultaneously, {{color1}} and {{color2}} palette, bold black outlines, analytical cubism, deconstructed form",
+    "negative_prompts": ["realistic", "smooth", "photographic", "conventional perspective"],
+    "marketPositioning": { "segment": "corporate_art", "pricePoint": "high", "targetBuyers": ["corporate offices", "design firms", "art collectors"] },
+    "culturalReferences": ["Guernica", "Les Demoiselles d'Avignon", "Blue Period"]
+  },
+  {
+    "id": 10, "name": "Monet Impressionist Dreams", "silo": "celestial-moon-stars",
+    "description": "Celestial scenes with Monet's light and atmosphere",
+    "inspirationDNA": [
+      { "sourceArtist": "Claude Monet", "influence": 85, "inheritedTraits": ["soft brushwork", "light and atmosphere", "color reflections", "plein air feeling"] },
+      { "sourceArtist": "J.M.W. Turner", "influence": 15, "inheritedTraits": ["luminous sky", "atmospheric perspective"] }
+    ],
+    "styleCluster": "Luxury Condo Minimalism",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in claude monet impressionist style, soft loose brushwork, dappled light, {{color1}} and {{color2}} atmospheric haze, water reflections, plein air quality, gentle movement, museum quality impressionism",
+    "negative_prompts": ["sharp edges", "photorealistic", "flat", "digital clean"],
+    "marketPositioning": { "segment": "luxury_residential", "pricePoint": "high", "targetBuyers": ["luxury homeowners", "hotel lobbies", "art collectors"] },
+    "culturalReferences": ["Water Lilies series", "Haystacks series", "Rouen Cathedral series"]
+  },
+  {
+    "id": 11, "name": "Matisse Joyful Cuts", "silo": "vintage-retro-posters",
+    "description": "Bold flat color shapes in Matisse fauvist tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "Henri Matisse", "influence": 90, "inheritedTraits": ["bold flat colors", "decorative patterns", "joy of life", "paper cut aesthetic"] },
+      { "sourceArtist": "Raoul Dufy", "influence": 10, "inheritedTraits": ["vibrant celebration", "festive energy"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} in matisse fauvist style, bold flat color shapes {{color1}} and {{color2}}, paper cut aesthetic, decorative floral patterns, joyful composition, jazz series inspired, museum quality fauvism",
+    "negative_prompts": ["dark", "sad", "realistic", "detailed texture", "shadows"],
+    "marketPositioning": { "segment": "luxury_residential", "pricePoint": "high", "targetBuyers": ["art collectors", "design-forward homeowners", "gallery buyers"] },
+    "culturalReferences": ["The Dance", "Jazz series", "Blue Nudes cutouts"]
+  },
+  {
+    "id": 12, "name": "Haring Energy Lines", "silo": "geometric-art",
+    "description": "Pure Keith Haring bold outline energy art",
+    "inspirationDNA": [
+      { "sourceArtist": "Keith Haring", "influence": 95, "inheritedTraits": ["bold black outlines", "radiant energy lines", "dancing figures", "subway art origins"] },
+      { "sourceArtist": "Jean Dubuffet", "influence": 5, "inheritedTraits": ["raw outsider energy", "primitive strength"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} in keith haring style, thick black outlines, radiant lines showing energy, {{color1}} and {{color2}} flat fills, dancing movement, subway art aesthetic, accessible pop art, bold graphic",
+    "negative_prompts": ["realistic", "soft", "subtle", "gradient", "3d"],
+    "marketPositioning": { "segment": "contemporary_youth", "pricePoint": "mid", "targetBuyers": ["millennials", "urban art fans", "children's spaces"] },
+    "culturalReferences": ["NYC Subway art", "Pop Shop", "ACT UP collaboration"]
+  },
+  {
+    "id": 13, "name": "Dali Dream Visions", "silo": "ocean-beach-coastal",
+    "description": "Surrealist coastal dreamscapes in Dali tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "Salvador Dali", "influence": 80, "inheritedTraits": ["melting forms", "dreamlike impossible scenes", "hyper-detailed surrealism"] },
+      { "sourceArtist": "Giorgio de Chirico", "influence": 20, "inheritedTraits": ["metaphysical mystery", "long shadows", "classical architecture"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{subject}} in dali surrealist style, melting impossible forms, dreamlike {{color1}} and {{color2}} landscape, hyper-realistic detail in impossible scene, clock melting, surreal narrative, museum quality surrealism",
+    "negative_prompts": ["realistic mundane", "cartoon", "simple", "flat"],
+    "marketPositioning": { "segment": "luxury_collectors", "pricePoint": "premium", "targetBuyers": ["surrealism collectors", "boutique hotels", "art enthusiasts"] },
+    "culturalReferences": ["The Persistence of Memory", "Dream of Venus", "Elephants series"]
+  },
+  {
+    "id": 14, "name": "Kahlo Sacred Botanicals", "silo": "floral-paintings",
+    "description": "Symbolic floral art with Kahlo's spiritual intensity",
+    "inspirationDNA": [
+      { "sourceArtist": "Frida Kahlo", "influence": 75, "inheritedTraits": ["symbolic flowers", "Mexican folk art elements", "emotional intensity", "self-referential"] },
+      { "sourceArtist": "Diego Rivera", "influence": 25, "inheritedTraits": ["bold Mexican muralism", "vibrant colors", "cultural pride"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in frida kahlo symbolic style, vibrant {{color1}} and {{color2}} flowers, Mexican folk art elements, intense emotional quality, botanical symbolism, huipil textile patterns, sacred and sensual, museum quality",
+    "negative_prompts": ["corporate", "minimalist", "cold", "abstract geometric"],
+    "marketPositioning": { "segment": "cultural_luxury", "pricePoint": "high", "targetBuyers": ["Latinx collectors", "feminist art buyers", "cultural institutions"] },
+    "culturalReferences": ["Self Portrait with Thorn Necklace", "The Two Fridas", "Mexican folk art"]
+  },
+  {
+    "id": 15, "name": "Lichtenstein Comic Heroes", "silo": "mountain-hiking",
+    "description": "Bold Lichtenstein pop art takes on outdoor adventure",
+    "inspirationDNA": [
+      { "sourceArtist": "Roy Lichtenstein", "influence": 85, "inheritedTraits": ["ben-day dots", "bold comic outlines", "flat color fills", "speech bubbles"] },
+      { "sourceArtist": "Andy Warhol", "influence": 15, "inheritedTraits": ["commercial aesthetic", "cultural commentary"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{subject}} in roy lichtenstein comic book style, ben-day dot pattern, bold black outlines, {{color1}} and {{color2}} primary colors, speech bubble optional, high contrast, flat color, commercial polish",
+    "negative_prompts": ["realistic", "soft edges", "no dots", "subtle", "photographic"],
+    "marketPositioning": { "segment": "pop_culture", "pricePoint": "mid_to_high", "targetBuyers": ["pop art collectors", "comic culture fans", "bold interior design"] },
+    "culturalReferences": ["Whaam!", "Drowning Girl", "Look Mickey"]
+  },
+  {
+    "id": 16, "name": "Kusama Wellness Dots", "silo": "yoga-wellness",
+    "description": "Meditation and wellness through Kusama dot infinity",
+    "inspirationDNA": [
+      { "sourceArtist": "Yayoi Kusama", "influence": 70, "inheritedTraits": ["infinite dots", "repetitive meditation", "therapeutic obsession"] },
+      { "sourceArtist": "Agnes Martin", "influence": 30, "inheritedTraits": ["meditative minimalism", "spiritual calm", "repetitive lines"] }
+    ],
+    "styleCluster": "Luxury Condo Minimalism",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} surrounded by infinite {{color1}} dots on {{color2}} background, meditative pattern, therapeutic repetition, infinity net quality, calm obsessive beauty, wellness aesthetic",
+    "negative_prompts": ["chaotic", "aggressive", "loud", "dark"],
+    "marketPositioning": { "segment": "wellness_luxury", "pricePoint": "mid_to_high", "targetBuyers": ["yoga studios", "wellness spas", "mindful homes"] },
+    "culturalReferences": ["Infinity Rooms", "Dots Obsession", "Therapeutic art"]
+  },
+  {
+    "id": 17, "name": "Warhol Coffee Icons", "silo": "coffee-cafe-art",
+    "description": "Coffee culture elevated to Warhol consumer iconography",
+    "inspirationDNA": [
+      { "sourceArtist": "Andy Warhol", "influence": 80, "inheritedTraits": ["consumer product celebration", "repetition grid", "screen print look"] },
+      { "sourceArtist": "Ed Ruscha", "influence": 20, "inheritedTraits": ["word art", "California cool", "commercial vernacular"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} in warhol consumer icon style, bold flat {{color1}} and {{color2}}, repeated grid composition, screen print aesthetic, elevated everyday object, commercial art nostalgia",
+    "negative_prompts": ["realistic photo", "dark", "sad", "complex background"],
+    "marketPositioning": { "segment": "cafe_culture", "pricePoint": "mid", "targetBuyers": ["coffee shops", "cafe owners", "coffee lovers"] },
+    "culturalReferences": ["Campbell's Soup", "Consumer culture icons", "Factory aesthetic"]
+  },
+  {
+    "id": 18, "name": "Haring Rhythm Music", "silo": "music-art",
+    "description": "Music and dance energy through Keith Haring lines",
+    "inspirationDNA": [
+      { "sourceArtist": "Keith Haring", "influence": 80, "inheritedTraits": ["dancing figures", "radiant music energy", "rhythm lines", "joyful movement"] },
+      { "sourceArtist": "Jean-Michel Basquiat", "influence": 20, "inheritedTraits": ["jazz references", "urban energy", "cultural commentary"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} in keith haring style, bold outlines, dancing rhythm figures, {{color1}} and {{color2}}, radiant lines showing sound waves, musical energy, movement and joy, graffiti roots",
+    "negative_prompts": ["static", "silent", "boring", "corporate"],
+    "marketPositioning": { "segment": "music_culture", "pricePoint": "mid", "targetBuyers": ["music venues", "music lovers", "urban culture fans"] },
+    "culturalReferences": ["Radiant Baby", "NYC club scene", "Music and dance works"]
+  },
+  {
+    "id": 19, "name": "Fairey Power Sports", "silo": "sport-fitness",
+    "description": "Sports empowerment through Shepard Fairey propaganda aesthetic",
+    "inspirationDNA": [
+      { "sourceArtist": "Shepard Fairey", "influence": 85, "inheritedTraits": ["bold graphic", "propaganda poster style", "OBEY aesthetic", "high contrast"] },
+      { "sourceArtist": "El Lissitzky", "influence": 15, "inheritedTraits": ["constructivist power", "geometric strength"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} in shepard fairey propaganda poster style, bold {{color1}} and {{color2}} high contrast, OBEY aesthetic, stencil portrait, powerful graphic, motivational strength, street art politics",
+    "negative_prompts": ["soft", "pastel", "weak", "corporate clean"],
+    "marketPositioning": { "segment": "urban_sports", "pricePoint": "mid", "targetBuyers": ["gyms", "sports fans", "urban fitness culture"] },
+    "culturalReferences": ["Obama Hope poster", "OBEY Giant campaign", "Street art activism"]
+  },
+  {
+    "id": 20, "name": "Kente Pattern Masters", "silo": "african-art",
+    "description": "African artistic heritage meets contemporary gallery",
+    "inspirationDNA": [
+      { "sourceArtist": "El Anatsui", "influence": 50, "inheritedTraits": ["African textiles reimagined", "repurposed materials aesthetic", "cultural dignity"] },
+      { "sourceArtist": "Kehinde Wiley", "influence": 30, "inheritedTraits": ["ornate backgrounds", "regal dignity", "vibrant patterns"] },
+      { "sourceArtist": "Kara Walker", "influence": 20, "inheritedTraits": ["narrative power", "cultural history"] }
+    ],
+    "styleCluster": "Hedge Fund Office Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} with kente cloth patterns, {{color1}} and {{color2}} and gold geometric weave, Ghanaian royal textile aesthetic, contemporary African art, dignified cultural celebration, museum quality",
+    "negative_prompts": ["stereotypical", "offensive", "colonial", "caricature"],
+    "marketPositioning": { "segment": "cultural_luxury", "pricePoint": "high", "targetBuyers": ["African diaspora collectors", "cultural institutions", "contemporary art buyers"] },
+    "culturalReferences": ["Kente cloth royalty", "African contemporary art scene", "Cultural pride"]
+  },
+  {
+    "id": 21, "name": "Hokusai Wave Masters", "silo": "japanese-art",
+    "description": "Japanese woodblock tradition meets contemporary",
+    "inspirationDNA": [
+      { "sourceArtist": "Katsushika Hokusai", "influence": 70, "inheritedTraits": ["woodblock line quality", "wave compositions", "nature power", "flat perspective"] },
+      { "sourceArtist": "Takashi Murakami", "influence": 30, "inheritedTraits": ["contemporary Japanese aesthetic", "global appeal", "pop sensibility"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in hokusai woodblock style, clean line quality, {{color1}} and {{color2}} flat colors, traditional Japanese composition, wave energy, contemporary refinement, museum quality",
+    "negative_prompts": ["photorealistic", "western style", "3d render", "digital"],
+    "marketPositioning": { "segment": "zen_luxury", "pricePoint": "high", "targetBuyers": ["japanese design lovers", "zen spaces", "contemporary collectors"] },
+    "culturalReferences": ["The Great Wave", "36 Views of Mount Fuji", "Ukiyo-e tradition"]
+  },
+  {
+    "id": 22, "name": "Boho Dream Weaver", "silo": "boho-art",
+    "description": "Bohemian spirit through layered mixed media aesthetic",
+    "inspirationDNA": [
+      { "sourceArtist": "Frida Kahlo", "influence": 40, "inheritedTraits": ["Mexican folk art elements", "floral symbolism", "free spirit"] },
+      { "sourceArtist": "Gustav Klimt", "influence": 40, "inheritedTraits": ["decorative gold patterns", "ornate surfaces", "sensual richness"] },
+      { "sourceArtist": "Henri Matisse", "influence": 20, "inheritedTraits": ["decorative joy", "pattern celebration", "color confidence"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in bohemian mixed media style, {{color1}} and {{color2}} earthy tones, klimt gold ornamental patterns, folk art elements, layered decorative richness, free-spirited beauty",
+    "negative_prompts": ["corporate", "minimalist", "cold", "sterile"],
+    "marketPositioning": { "segment": "boho_lifestyle", "pricePoint": "mid_to_high", "targetBuyers": ["bohemian homeowners", "festival culture", "free spirit collectors"] },
+    "culturalReferences": ["Klimt's The Kiss", "Kahlo's garden", "Global textile arts"]
+  },
+  {
+    "id": 23, "name": "Matisse Face Lines", "silo": "abstract-faces",
+    "description": "Abstract female portraits with Matisse line confidence",
+    "inspirationDNA": [
+      { "sourceArtist": "Henri Matisse", "influence": 75, "inheritedTraits": ["continuous line drawing", "elegant simplicity", "decorative pattern integration"] },
+      { "sourceArtist": "Pablo Picasso", "influence": 25, "inheritedTraits": ["multiple perspectives", "expressive distortion"] }
+    ],
+    "styleCluster": "Luxury Condo Minimalism",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "abstract female {{subject}} in matisse continuous line style, single flowing line portrait, {{color1}} and {{color2}} minimal fills, decorative pattern background, elegant simplicity, luxe line art",
+    "negative_prompts": ["photorealistic", "detailed", "busy", "comic book"],
+    "marketPositioning": { "segment": "luxury_minimal", "pricePoint": "high", "targetBuyers": ["modern homes", "boutique hotels", "design-forward spaces"] },
+    "culturalReferences": ["Matisse line drawings", "Woman with Hat", "The Dance"]
+  },
+  {
+    "id": 24, "name": "Haring Kids World", "silo": "kids-educational",
+    "description": "Educational art with Keith Haring accessible joy",
+    "inspirationDNA": [
+      { "sourceArtist": "Keith Haring", "influence": 90, "inheritedTraits": ["accessible bold art", "children friendly", "educational clarity", "joyful figures"] },
+      { "sourceArtist": "Eric Carle", "influence": 10, "inheritedTraits": ["bright collage colors", "educational warmth"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} in keith haring educational style, bold simple outlines, {{color1}} and {{color2}} bright fills, child-friendly figures, learning and joy, accessible art for children",
+    "negative_prompts": ["dark", "scary", "adult", "complex", "violent"],
+    "marketPositioning": { "segment": "children_education", "pricePoint": "low_to_mid", "targetBuyers": ["schools", "parents", "children's spaces"] },
+    "culturalReferences": ["Pop Shop prints", "NYC schoolyard murals", "Art for all"]
+  },
+  {
+    "id": 25, "name": "Travel Poster Dreams", "silo": "map-travel-art",
+    "description": "Vintage travel poster aesthetic for destination art",
+    "inspirationDNA": [
+      { "sourceArtist": "A.M. Cassandre", "influence": 60, "inheritedTraits": ["bold travel poster graphic", "flat color planes", "dramatic perspective"] },
+      { "sourceArtist": "Shepard Fairey", "influence": 40, "inheritedTraits": ["contemporary poster boldness", "graphic impact"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} vintage travel poster style, bold flat {{color1}} and {{color2}}, dramatic graphic composition, retro tourism aesthetic, clean typography space, WPA era poster quality",
+    "negative_prompts": ["photographic", "busy", "modern digital", "cluttered"],
+    "marketPositioning": { "segment": "travel_culture", "pricePoint": "mid", "targetBuyers": ["travel lovers", "home offices", "hospitality spaces"] },
+    "culturalReferences": ["WPA National Park posters", "Art Deco travel", "Cassandre Normandie poster"]
+  },
+  {
+    "id": 26, "name": "Klimt Gold Celestial", "silo": "sun-moon-duality",
+    "description": "Celestial mysticism through Klimt's golden ornament",
+    "inspirationDNA": [
+      { "sourceArtist": "Gustav Klimt", "influence": 80, "inheritedTraits": ["gold leaf aesthetic", "ornate patterns", "sensual symbolism", "Byzantine richness"] },
+      { "sourceArtist": "Alphonse Mucha", "influence": 20, "inheritedTraits": ["art nouveau curves", "celestial symbolism", "decorative border"] }
+    ],
+    "styleCluster": "Hedge Fund Office Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in gustav klimt style, gold ornamental patterns, {{color1}} and gold Byzantine richness, art nouveau decorative swirls, sensual symbolic beauty, mosaic-like detail",
+    "negative_prompts": ["minimalist", "cold", "corporate", "plain"],
+    "marketPositioning": { "segment": "ultra_luxury", "pricePoint": "premium", "targetBuyers": ["ultra luxury homes", "collectors", "hotel suites"] },
+    "culturalReferences": ["The Kiss", "Portrait of Adele Bloch-Bauer", "Tree of Life"]
+  },
+  {
+    "id": 27, "name": "Ruscha Word Power", "silo": "typography-word-art",
+    "description": "Typography as art in Ed Ruscha California cool tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "Ed Ruscha", "influence": 70, "inheritedTraits": ["word as image", "California cool", "commercial vernacular beauty"] },
+      { "sourceArtist": "Barbara Kruger", "influence": 30, "inheritedTraits": ["bold text impact", "social message", "graphic power"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "ideogram",
+    "enhancedPromptTemplate": "{{word_art}} in ed ruscha california cool style, {{color1}} and {{color2}}, word as pure image, desert sunset or night sky backdrop, clean graphic typographic art",
+    "negative_prompts": ["illegible", "cluttered", "handwritten amateur", "pixelated"],
+    "marketPositioning": { "segment": "design_culture", "pricePoint": "mid_to_high", "targetBuyers": ["design studios", "creative offices", "word lovers"] },
+    "culturalReferences": ["Hollywood", "Standard Station", "Twenty Six Gasoline Stations"]
+  },
+  {
+    "id": 28, "name": "Expressionist Holiday", "silo": "christmas-holiday",
+    "description": "Holiday warmth through Expressionist color emotion",
+    "inspirationDNA": [
+      { "sourceArtist": "Ernst Ludwig Kirchner", "influence": 50, "inheritedTraits": ["bold expressionist color", "emotional intensity", "gestural marks"] },
+      { "sourceArtist": "Henri Matisse", "influence": 50, "inheritedTraits": ["joyful color celebration", "decorative warmth"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{subject}} in warm expressionist holiday style, {{color1}} reds and golds, gestural joyful marks, holiday celebration emotion, gift-worthy art quality",
+    "negative_prompts": ["cold", "commercial cheap", "garish", "corporate"],
+    "marketPositioning": { "segment": "holiday_gift", "pricePoint": "mid", "targetBuyers": ["gift buyers", "holiday decorators", "seasonal collectors"] },
+    "culturalReferences": ["Holiday warmth", "Expressionist color theory", "Gift culture"]
+  },
+  {
+    "id": 29, "name": "Gothic Dream Halloween", "silo": "halloween-art",
+    "description": "Sophisticated dark art for Halloween in gothic tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "Aubrey Beardsley", "influence": 60, "inheritedTraits": ["ornate gothic line", "dark elegance", "Victorian macabre beauty"] },
+      { "sourceArtist": "Odilon Redon", "influence": 40, "inheritedTraits": ["symbolic darkness", "dreamlike horror", "symbolic flora"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{subject}} in aubrey beardsley gothic style, ornate dark line work, {{color1}} and black, Victorian macabre elegance, art nouveau darkness, sophisticated spooky",
+    "negative_prompts": ["cute", "friendly", "bright", "childish"],
+    "marketPositioning": { "segment": "sophisticated_dark", "pricePoint": "mid_to_high", "targetBuyers": ["dark aesthetics fans", "Halloween collectors", "gothic interiors"] },
+    "culturalReferences": ["Victorian Gothic", "Beardsley's Salome", "Symbolist movement"]
+  },
+  {
+    "id": 30, "name": "Cartoon Dino World", "silo": "dinosaur-art",
+    "description": "Kids dinosaur art with contemporary cartoon energy",
+    "inspirationDNA": [
+      { "sourceArtist": "KAWS", "influence": 50, "inheritedTraits": ["cartoon appropriation", "XX eyes", "contemporary toy aesthetic"] },
+      { "sourceArtist": "Keith Haring", "influence": 50, "inheritedTraits": ["bold outlines", "energetic movement", "child-friendly accessibility"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{subject}} cartoon dinosaur with kaws-inspired xx eyes, bold keith haring outlines, {{color1}} and {{color2}} bright fills, child-friendly fun, contemporary toy aesthetic",
+    "negative_prompts": ["scary realistic", "dark", "violent", "adult"],
+    "marketPositioning": { "segment": "children_room", "pricePoint": "low_to_mid", "targetBuyers": ["parents", "kids room decorators", "gift buyers"] },
+    "culturalReferences": ["KAWS companion energy", "Haring accessible art", "Contemporary children's design"]
+  },
+  {
+    "id": 31, "name": "Murakami Fantasy Realm", "silo": "unicorn-fantasy",
+    "description": "Fantasy creatures in Murakami superflat rainbow world",
+    "inspirationDNA": [
+      { "sourceArtist": "Takashi Murakami", "influence": 90, "inheritedTraits": ["superflat kawaii", "rainbow patterns", "anime aesthetic", "smiling elements"] },
+      { "sourceArtist": "KAWS", "influence": 10, "inheritedTraits": ["contemporary toy appeal", "collector culture"] }
+    ],
+    "styleCluster": "Kawaii Maximalism",
+    "preferred_engine": "midjourney",
+    "enhancedPromptTemplate": "{{subject}} in murakami superflat fantasy style, smiling flower companions, rainbow explosion {{color1}} and {{color2}}, anime eyes, kawaii maximalism, magical joyful chaos, luxury toy aesthetic",
+    "negative_prompts": ["dark fantasy", "scary", "violent", "realistic"],
+    "marketPositioning": { "segment": "fashion_kawaii", "pricePoint": "mid_to_high", "targetBuyers": ["kawaii collectors", "anime fans", "fashion forward buyers"] },
+    "culturalReferences": ["LV collaboration", "Superflat theory", "Anime fantasy"]
+  },
+  {
+    "id": 32, "name": "Wyeth Woodland Dreams", "silo": "fox-woodland",
+    "description": "Woodland atmosphere through Andrew Wyeth realist poetry",
+    "inspirationDNA": [
+      { "sourceArtist": "Andrew Wyeth", "influence": 75, "inheritedTraits": ["quiet realist poetry", "earthy tones", "melancholy beauty", "American landscape"] },
+      { "sourceArtist": "Winslow Homer", "influence": 25, "inheritedTraits": ["American nature mastery", "honest observation"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in andrew wyeth realist style, earthy {{color1}} and {{color2}} tones, quiet poetic atmosphere, American countryside quality, melancholy beauty, tempera-like texture",
+    "negative_prompts": ["bright pop", "cartoon", "urban", "flat"],
+    "marketPositioning": { "segment": "americana_luxury", "pricePoint": "high", "targetBuyers": ["American art lovers", "country home buyers", "classic realism collectors"] },
+    "culturalReferences": ["Christina's World", "Helga series", "Pennsylvania countryside"]
+  },
+  {
+    "id": 33, "name": "O'Keeffe Desert Spirit", "silo": "desert-southwest",
+    "description": "Desert abstraction through Georgia O'Keeffe's vision",
+    "inspirationDNA": [
+      { "sourceArtist": "Georgia O'Keeffe", "influence": 90, "inheritedTraits": ["enlarged natural forms", "desert color palette", "spiritual abstraction", "sensual curves"] },
+      { "sourceArtist": "Alfred Stieglitz", "influence": 10, "inheritedTraits": ["American modernism", "photographic eye"] }
+    ],
+    "styleCluster": "Luxury Condo Minimalism",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in georgia o'keeffe desert style, enlarged close-up forms, {{color1}} and {{color2}} southwestern palette, spiritual sensual abstraction, New Mexico desert beauty",
+    "negative_prompts": ["crowded", "dark", "urban", "geometric hard"],
+    "marketPositioning": { "segment": "american_luxury", "pricePoint": "premium", "targetBuyers": ["American art collectors", "southwestern homes", "luxury galleries"] },
+    "culturalReferences": ["Cow Skull series", "Poppy flowers", "New Mexico landscapes"]
+  },
+  {
+    "id": 34, "name": "Audubon Bird Science", "silo": "bird-art",
+    "description": "Scientific illustration elegance in Audubon tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "John James Audubon", "influence": 75, "inheritedTraits": ["scientific illustration precision", "natural pose", "botanical setting", "documentary beauty"] },
+      { "sourceArtist": "Maria Sibylla Merian", "influence": 25, "inheritedTraits": ["botanical accuracy", "natural history elegance"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in audubon natural history illustration style, precise scientific detail, {{color1}} and {{color2}} watercolor quality, botanical setting, elegant documentation, museum plate quality",
+    "negative_prompts": ["cartoon", "simplified", "modern digital", "flat"],
+    "marketPositioning": { "segment": "natural_history_luxury", "pricePoint": "high", "targetBuyers": ["nature lovers", "natural history fans", "country homes"] },
+    "culturalReferences": ["Birds of America", "Natural history museum plates", "Ornithological tradition"]
+  },
+  {
+    "id": 35, "name": "Kandinsky Space Music", "silo": "space-galaxy",
+    "description": "Cosmic art through Kandinsky's abstract visual music",
+    "inspirationDNA": [
+      { "sourceArtist": "Wassily Kandinsky", "influence": 80, "inheritedTraits": ["visual music abstraction", "color as emotion", "geometric spiritual forms"] },
+      { "sourceArtist": "Joan Miró", "influence": 20, "inheritedTraits": ["cosmic playfulness", "biomorphic shapes", "starfield compositions"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "cosmic {{subject}} in kandinsky abstract music style, visual harmony of {{color1}} and {{color2}}, geometric spiritual forms floating in space, color as pure emotion, synesthetic beauty",
+    "negative_prompts": ["photorealistic space", "NASA photo", "flat", "simple"],
+    "marketPositioning": { "segment": "modern_art_luxury", "pricePoint": "high", "targetBuyers": ["abstract art collectors", "modern design spaces", "corporate lobbies"] },
+    "culturalReferences": ["Composition series", "Visual music theory", "Bauhaus cosmos"]
+  },
+  {
+    "id": 36, "name": "Rockwell Outdoor Heritage", "silo": "fishing-hunting",
+    "description": "American outdoor tradition through Rockwell's warm realism",
+    "inspirationDNA": [
+      { "sourceArtist": "Norman Rockwell", "influence": 70, "inheritedTraits": ["warm American realism", "storytelling composition", "nostalgic detail", "heartland values"] },
+      { "sourceArtist": "Winslow Homer", "influence": 30, "inheritedTraits": ["outdoor sporting tradition", "watercolor freshness"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in norman rockwell warm realist style, nostalgic American outdoor scene, {{color1}} and {{color2}} earthy warm palette, storytelling composition, Saturday Evening Post quality",
+    "negative_prompts": ["dark", "abstract", "modern", "urban"],
+    "marketPositioning": { "segment": "americana_outdoor", "pricePoint": "mid", "targetBuyers": ["outdoor sports fans", "hunting lodges", "American heritage collectors"] },
+    "culturalReferences": ["Saturday Evening Post covers", "Four Freedoms", "American outdoor tradition"]
+  },
+  {
+    "id": 37, "name": "Kruger Woman Power", "silo": "feminine-empowerment",
+    "description": "Feminist power through Barbara Kruger bold text art",
+    "inspirationDNA": [
+      { "sourceArtist": "Barbara Kruger", "influence": 80, "inheritedTraits": ["bold text over image", "red black white power", "feminist message", "ad language subverted"] },
+      { "sourceArtist": "Cindy Sherman", "influence": 20, "inheritedTraits": ["feminine self-representation", "cultural critique"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "ideogram",
+    "enhancedPromptTemplate": "empowerment {{subject}} in barbara kruger style, bold red and black and white, powerful text integrated, feminist statement, advertising aesthetic subverted, YOUR BODY IS A BATTLEGROUND energy",
+    "negative_prompts": ["passive", "weak", "pink stereotypical", "corporate safe"],
+    "marketPositioning": { "segment": "feminist_contemporary", "pricePoint": "mid_to_high", "targetBuyers": ["feminist art buyers", "contemporary galleries", "empowered women"] },
+    "culturalReferences": ["Your Body Is A Battleground", "I Shop Therefore I Am", "Bold feminist art"]
+  },
+  {
+    "id": 38, "name": "Kawaii Cute Halloween", "silo": "halloween-cute",
+    "description": "Adorable Halloween with Japanese kawaii sensibility",
+    "inspirationDNA": [
+      { "sourceArtist": "Yoshitomo Nara", "influence": 60, "inheritedTraits": ["big innocent eyes", "deceptive sweetness", "child-like defiance"] },
+      { "sourceArtist": "KAWS", "influence": 40, "inheritedTraits": ["toy aesthetic", "soft rounded forms", "contemporary collectible"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "dalle3",
+    "enhancedPromptTemplate": "{{subject}} in nara kawaii style, huge innocent eyes, {{color1}} and {{color2}} soft pastels, adorable spooky, sweet halloween, child-like but sophisticated, vinyl toy quality",
+    "negative_prompts": ["scary", "dark", "violent", "gory", "adult horror"],
+    "marketPositioning": { "segment": "kawaii_culture", "pricePoint": "mid", "targetBuyers": ["kawaii collectors", "young adults", "cute culture fans"] },
+    "culturalReferences": ["Yoshitomo Nara's defiant children", "KAWS companion energy", "Harajuku culture"]
+  },
+  {
+    "id": 39, "name": "Degas Movement Grace", "silo": "horse-equestrian",
+    "description": "Equestrian elegance through Degas movement studies",
+    "inspirationDNA": [
+      { "sourceArtist": "Edgar Degas", "influence": 85, "inheritedTraits": ["movement studies", "pastel elegance", "unconventional angles", "fleeting moment"] },
+      { "sourceArtist": "Théodore Géricault", "influence": 15, "inheritedTraits": ["equestrian drama", "horse anatomy mastery"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} horse in degas movement study style, pastel {{color1}} and {{color2}}, graceful motion captured, unconventional composition angle, fleeting elegant moment, impressionist grace",
+    "negative_prompts": ["stiff", "static", "cartoon", "bright garish"],
+    "marketPositioning": { "segment": "equestrian_luxury", "pricePoint": "high", "targetBuyers": ["equestrians", "horse lovers", "luxury country homes"] },
+    "culturalReferences": ["Racehorses at Longchamp", "Ballet dancers", "Pastel mastery"]
+  },
+  {
+    "id": 40, "name": "Cezanne Still Life Vino", "silo": "wine-beer-art",
+    "description": "Wine and food elevated through Cezanne Post-Impressionism",
+    "inspirationDNA": [
+      { "sourceArtist": "Paul Cezanne", "influence": 80, "inheritedTraits": ["geometric still life", "multiple viewpoints", "structural color", "Provencal warmth"] },
+      { "sourceArtist": "Henri Matisse", "influence": 20, "inheritedTraits": ["Mediterranean joy", "decorative tablecloth patterns"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in cezanne post-impressionist still life, geometric forms, {{color1}} and {{color2}} Provencal warmth, multiple viewpoints, structural brushwork, Aix-en-Provence table setting",
+    "negative_prompts": ["photorealistic", "flat", "modern digital", "commercial"],
+    "marketPositioning": { "segment": "wine_culture_luxury", "pricePoint": "high", "targetBuyers": ["wine lovers", "restaurant decor", "French provincial homes"] },
+    "culturalReferences": ["Large Bathers", "Mont Sainte-Victoire", "Still life with apples"]
+  },
+  {
+    "id": 41, "name": "Klimt Library Sanctuary", "silo": "reading-library-art",
+    "description": "Reading spaces elevated with Klimt's golden sanctuary",
+    "inspirationDNA": [
+      { "sourceArtist": "Gustav Klimt", "influence": 65, "inheritedTraits": ["gold ornamental richness", "intimate figures", "decorative text integration"] },
+      { "sourceArtist": "Egon Schiele", "influence": 35, "inheritedTraits": ["expressive lines", "intimate vulnerability", "raw honesty"] }
+    ],
+    "styleCluster": "Hedge Fund Office Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in klimt golden sanctuary style, book and gold ornament, {{color1}} and gold richness, intimate reader figure, decorative mosaic quality, literary luxury",
+    "negative_prompts": ["cheap", "cold", "corporate", "plain background"],
+    "marketPositioning": { "segment": "literary_luxury", "pricePoint": "premium", "targetBuyers": ["bibliophiles", "private library owners", "literary collectors"] },
+    "culturalReferences": ["The Kiss golden embrace", "Vienna Secession", "Literary salon culture"]
+  },
+  {
+    "id": 42, "name": "Rockwell Care Heroes", "silo": "nurse-doctor-art",
+    "description": "Healthcare heroes with Rockwell's American warmth",
+    "inspirationDNA": [
+      { "sourceArtist": "Norman Rockwell", "influence": 85, "inheritedTraits": ["warm American humanity", "heroic everyday people", "storytelling warmth", "nostalgic detail"] },
+      { "sourceArtist": "Thomas Hart Benton", "influence": 15, "inheritedTraits": ["American working dignity", "WPA strength"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "ideogram",
+    "enhancedPromptTemplate": "{{subject}} healthcare hero in norman rockwell warm style, {{color1}} and {{color2}}, American heartland dignity, heroic caregiver moment, Saturday Evening Post quality appreciation",
+    "negative_prompts": ["gory", "graphic medical", "cold", "clinical"],
+    "marketPositioning": { "segment": "appreciation_gifts", "pricePoint": "mid", "targetBuyers": ["healthcare workers", "hospital gift shops", "appreciation gifts"] },
+    "culturalReferences": ["Doctor and Doll", "Four Freedoms", "American heroes"]
+  },
+  {
+    "id": 43, "name": "Haring Classroom Joy", "silo": "teacher-art",
+    "description": "Educational celebration through Keith Haring's accessible art",
+    "inspirationDNA": [
+      { "sourceArtist": "Keith Haring", "influence": 90, "inheritedTraits": ["educational accessibility", "joyful figures", "universal communication", "pop shop culture"] },
+      { "sourceArtist": "Norman Rockwell", "influence": 10, "inheritedTraits": ["American school warmth", "educational nostalgia"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "ideogram",
+    "enhancedPromptTemplate": "{{subject}} in keith haring classroom style, bold outlines, {{color1}} and {{color2}}, learning figures, educational joy, accessible art, apple for teacher motif",
+    "negative_prompts": ["dark", "complex", "boring", "corporate"],
+    "marketPositioning": { "segment": "educational_gifts", "pricePoint": "low_to_mid", "targetBuyers": ["teachers", "schools", "parents as gift buyers"] },
+    "culturalReferences": ["Art for all children", "Public school murals", "Educational equality"]
+  },
+  {
+    "id": 44, "name": "Pixel Neon Gaming", "silo": "gaming-art",
+    "description": "Retro gaming aesthetic meets neon contemporary",
+    "inspirationDNA": [
+      { "sourceArtist": "Roy Lichtenstein", "influence": 40, "inheritedTraits": ["grid pattern dots", "bold primary colors", "comic book energy"] },
+      { "sourceArtist": "Keith Haring", "influence": 40, "inheritedTraits": ["bold outlines", "figure energy", "accessible graphic"] },
+      { "sourceArtist": "Andy Warhol", "influence": 20, "inheritedTraits": ["repetition grid", "consumer culture icons"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} retro gaming in pixel art pop style, neon {{color1}} and {{color2}}, 8-bit inspired, bold arcade aesthetic, controller and screen motifs, gaming culture celebration",
+    "negative_prompts": ["realistic", "boring", "office", "dark"],
+    "marketPositioning": { "segment": "gaming_culture", "pricePoint": "mid", "targetBuyers": ["gamers", "gaming rooms", "retro culture fans"] },
+    "culturalReferences": ["Arcade culture", "Pixel art history", "Gaming lifestyle"]
+  },
+  {
+    "id": 45, "name": "Rainbow Liberation Pride", "silo": "pride-lgbtq",
+    "description": "Pride celebration through bold graphic liberation art",
+    "inspirationDNA": [
+      { "sourceArtist": "Keith Haring", "influence": 50, "inheritedTraits": ["joyful liberation", "unity figures", "bold accessible love"] },
+      { "sourceArtist": "Shepard Fairey", "influence": 30, "inheritedTraits": ["bold political graphic", "liberation poster energy"] },
+      { "sourceArtist": "Yayoi Kusama", "influence": 20, "inheritedTraits": ["infinite pattern joy", "inclusive repetition"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "flux-schnell",
+    "enhancedPromptTemplate": "{{subject}} pride celebration in haring liberation style, rainbow {{color1}} spectrum, bold unity figures, love is love energy, joyful graphic art, celebratory liberation",
+    "negative_prompts": ["dark", "divisive", "sad", "corporate bland"],
+    "marketPositioning": { "segment": "pride_community", "pricePoint": "mid", "targetBuyers": ["LGBTQ+ community", "allies", "pride events"] },
+    "culturalReferences": ["Haring's unity art", "Pride flags", "Liberation movement"]
+  },
+  {
+    "id": 46, "name": "Botanical Study Plants", "silo": "succulent-cactus",
+    "description": "Precision botanical illustration for plant lovers",
+    "inspirationDNA": [
+      { "sourceArtist": "Pierre-Joseph Redouté", "influence": 70, "inheritedTraits": ["botanical illustration precision", "scientific elegance", "white background clarity"] },
+      { "sourceArtist": "Georgia O'Keeffe", "influence": 30, "inheritedTraits": ["enlarged plant abstraction", "southwestern plants", "sensual form"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} botanical study in redoute illustration style, precise scientific beauty, {{color1}} and {{color2}} watercolor quality, white background, clean botanical plate, museum natural history quality",
+    "negative_prompts": ["cartoon", "messy", "dark", "abstract"],
+    "marketPositioning": { "segment": "botanical_luxury", "pricePoint": "mid_to_high", "targetBuyers": ["plant lovers", "botanical collectors", "nature homes"] },
+    "culturalReferences": ["Les Roses series", "Kew Gardens plates", "Natural history tradition"]
+  },
+  {
+    "id": 47, "name": "Wyeth Farmhouse Americana", "silo": "farmhouse-rustic",
+    "description": "Rustic Americana through Wyeth's honest realism",
+    "inspirationDNA": [
+      { "sourceArtist": "Andrew Wyeth", "influence": 70, "inheritedTraits": ["quiet American realism", "worn textures", "honest observation", "melancholy beauty"] },
+      { "sourceArtist": "Grant Wood", "influence": 30, "inheritedTraits": ["American Gothic regionalism", "rural dignity", "flat pattern fields"] }
+    ],
+    "styleCluster": "Botanical Luxury",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} in american regionalist style, wyeth honesty, {{color1}} and {{color2}} earthy worn tones, rural American dignity, weathered textures, grant wood flat fields",
+    "negative_prompts": ["modern", "urban", "bright pop", "abstract"],
+    "marketPositioning": { "segment": "americana_farmhouse", "pricePoint": "mid", "targetBuyers": ["farmhouse style homes", "rural American culture fans", "Americana collectors"] },
+    "culturalReferences": ["American Gothic", "Christina's World", "Heartland America"]
+  },
+  {
+    "id": 48, "name": "Soft Wonder Baby Art", "silo": "baby-shower-art",
+    "description": "Tender new life art with Berthe Morisot impressionist softness",
+    "inspirationDNA": [
+      { "sourceArtist": "Berthe Morisot", "influence": 70, "inheritedTraits": ["soft impressionist touch", "maternal tenderness", "gentle light", "feminine intimacy"] },
+      { "sourceArtist": "Mary Cassatt", "influence": 30, "inheritedTraits": ["mother and child intimacy", "pastel softness", "American impressionism"] }
+    ],
+    "styleCluster": "Nursery Whimsy",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} baby shower in morisot impressionist style, soft {{color1}} and {{color2}} pastel light, maternal tenderness, gentle brushwork, intimate precious moment, museum impressionism",
+    "negative_prompts": ["harsh", "dark", "scary", "cold"],
+    "marketPositioning": { "segment": "new_parent_gift", "pricePoint": "mid", "targetBuyers": ["new parents", "baby shower gifts", "nursery decorators"] },
+    "culturalReferences": ["Morisot's The Cradle", "Cassatt mother and child", "Impressionist tenderness"]
+  },
+  {
+    "id": 49, "name": "Fairey Graduate Power", "silo": "graduation-art",
+    "description": "Graduation achievement through bold graphic poster tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "Shepard Fairey", "influence": 70, "inheritedTraits": ["bold achievement graphic", "propaganda of hope", "OBEY energy turned positive"] },
+      { "sourceArtist": "El Lissitzky", "influence": 30, "inheritedTraits": ["constructivist celebration", "forward momentum", "architectural power"] }
+    ],
+    "styleCluster": "Pop Culture Rebellion",
+    "preferred_engine": "ideogram",
+    "enhancedPromptTemplate": "{{subject}} graduation achievement in fairey bold style, {{color1}} and {{color2}}, HOPE energy, diploma and cap motifs, achievement power graphic, class of 2026 celebration",
+    "negative_prompts": ["sad", "failure", "weak", "boring"],
+    "marketPositioning": { "segment": "graduation_gift", "pricePoint": "mid", "targetBuyers": ["graduates", "proud parents", "schools"] },
+    "culturalReferences": ["Obama Hope poster energy", "Achievement culture", "Forward momentum"]
+  },
+  {
+    "id": 50, "name": "Hiroshige Zen Buddha", "silo": "zen-buddha-art",
+    "description": "Spiritual peace through Japanese woodblock tradition",
+    "inspirationDNA": [
+      { "sourceArtist": "Utagawa Hiroshige", "influence": 60, "inheritedTraits": ["peaceful atmospheric landscapes", "rain and mist effects", "meditative nature"] },
+      { "sourceArtist": "Katsushika Hokusai", "influence": 40, "inheritedTraits": ["clean line power", "nature as spiritual force", "flat perspective"] }
+    ],
+    "styleCluster": "Corporate Sophistication",
+    "preferred_engine": "flux-dev",
+    "enhancedPromptTemplate": "{{subject}} zen buddha in hiroshige woodblock style, atmospheric mist, {{color1}} and {{color2}} indigo and calm, meditative nature scene, lotus and temple elements, spiritual serenity, Japanese museum quality",
+    "negative_prompts": ["chaotic", "violent", "disrespectful", "commercial"],
+    "marketPositioning": { "segment": "zen_wellness", "pricePoint": "mid_to_high", "targetBuyers": ["meditation spaces", "zen enthusiasts", "spiritual homes"] },
+    "culturalReferences": ["100 Famous Views of Edo", "Rain series", "Meditative Japanese art"]
+  }
+]
