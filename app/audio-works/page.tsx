@@ -325,7 +325,12 @@ export default function AudioWorksPage() {
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Library</p>
               <button
-                onClick={() => setShowGenerateForm(v => !v)}
+                onClick={() => {
+                  setShowGenerateForm(v => {
+                    if (v) { setGenFile(null); setGenMsg(null) }
+                    return !v
+                  })
+                }}
                 className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
               >
                 + New
@@ -398,7 +403,7 @@ export default function AudioWorksPage() {
             <div className="px-4 py-8 text-center text-slate-500 text-sm">Loading...</div>
           )}
 
-          {!loading && audiobooks.length === 0 && (
+          {!loading && audiobooks.length === 0 && generatingBooks.length === 0 && (
             <div className="px-4 py-12 flex flex-col items-center gap-3 text-slate-500">
               <Headphones className="w-10 h-10 opacity-30" />
               <p className="text-sm text-center">No audiobooks yet. Click &quot;+ New&quot; to generate one.</p>
