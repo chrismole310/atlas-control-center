@@ -189,7 +189,8 @@ export default function AudioWorksPage() {
   // ── Delete ───────────────────────────────────────────────────────────────────
   const handleDelete = async (id: number) => {
     try {
-      await fetch(`${API}/api/v1/audiobooks/${id}`, { method: "DELETE" })
+      const res = await fetch(`${API}/api/v1/audiobooks/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
       if (selectedId === id) {
         setSelectedId(null)
         wavesurferRef.current?.destroy()
@@ -207,7 +208,8 @@ export default function AudioWorksPage() {
     setRegenLoading(id)
     setRegenMsg("Regenerating...")
     try {
-      await fetch(`${API}/api/v1/audiobooks/${id}/regenerate`, { method: "POST" })
+      const res = await fetch(`${API}/api/v1/audiobooks/${id}/regenerate`, { method: "POST" })
+      if (!res.ok) throw new Error(`Regenerate failed: ${res.status}`)
     } catch {
       // ignore
     }
