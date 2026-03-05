@@ -1,5 +1,8 @@
 'use strict';
 
+// NOTE: caller must invoke require('dotenv').config() before requiring this module
+// for environment variables to take effect in non-test entry points.
+
 const Bull = require('bull');
 
 const queues = new Map();
@@ -11,11 +14,13 @@ const REDIS_CONFIG = {
 };
 
 const QUEUE_NAMES = {
-  ARTWORK_GENERATION: 'artwork-generation',
+  TREND_SCRAPING: 'trend-scraping',
+  MARKET_INTELLIGENCE: 'market-intelligence',
+  IMAGE_GENERATION: 'image-generation',
   MOCKUP_GENERATION: 'mockup-generation',
   DISTRIBUTION: 'distribution',
   ANALYTICS: 'analytics',
-  SCRAPING: 'scraping',
+  MODEL_DISCOVERY: 'model-discovery',
 };
 
 function getQueue(name) {

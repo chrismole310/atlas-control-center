@@ -10,26 +10,26 @@ describe('Bull queue', () => {
   });
 
   test('can create artwork-generation queue', () => {
-    const q = getQueue(QUEUE_NAMES.ARTWORK_GENERATION);
+    const q = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
     expect(q).toBeTruthy();
-    expect(q.name).toBe('artwork-generation');
+    expect(q.name).toBe('image-generation');
   });
 
   test('getQueue returns same singleton', () => {
-    const q1 = getQueue(QUEUE_NAMES.ARTWORK_GENERATION);
-    const q2 = getQueue(QUEUE_NAMES.ARTWORK_GENERATION);
+    const q1 = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
+    const q2 = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
     expect(q1).toBe(q2);
   });
 
   test('Redis is reachable (queue client connects)', async () => {
-    const q = getQueue(QUEUE_NAMES.ARTWORK_GENERATION);
+    const q = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
     // isReady() resolves once the underlying Redis client connects
     await q.isReady();
     expect(true).toBe(true);
   });
 
   test('QUEUE_NAMES exports all expected queues', () => {
-    const expected = ['ARTWORK_GENERATION', 'MOCKUP_GENERATION', 'DISTRIBUTION', 'ANALYTICS', 'SCRAPING'];
+    const expected = ['TREND_SCRAPING', 'MARKET_INTELLIGENCE', 'IMAGE_GENERATION', 'MOCKUP_GENERATION', 'DISTRIBUTION', 'ANALYTICS', 'MODEL_DISCOVERY'];
     expected.forEach(name => {
       expect(QUEUE_NAMES).toHaveProperty(name);
     });

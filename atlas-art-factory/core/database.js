@@ -1,5 +1,8 @@
 'use strict';
 
+// NOTE: caller must invoke require('dotenv').config() before requiring this module
+// for environment variables to take effect in non-test entry points.
+
 const { Pool } = require('pg');
 
 let pool = null;
@@ -12,7 +15,7 @@ function getPool() {
       database: process.env.POSTGRES_DB || 'atlas_art_factory',
       user: process.env.POSTGRES_USER || 'atlas',
       password: process.env.POSTGRES_PASSWORD || 'atlas_secret',
-      max: 20,
+      max: 20, // supports up to 20 concurrent connections; scale down if running multiple processes
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     });
