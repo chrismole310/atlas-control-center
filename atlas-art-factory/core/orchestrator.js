@@ -10,7 +10,7 @@ const { createLogger } = require('./logger');
 const { runTrendScraper } = require('../engines/trend-scraper/index');
 const { runMarketIntelligence } = require('../engines/2-market-intelligence/index');
 const { runDailyBatch } = require('../engines/4-ai-artist/index');
-const { runMockupGeneration } = require('../engines/mockup-generator/index');
+const { runMockupBatch } = require('../engines/5-mockup-generation/index');
 const { runDistribution } = require('../engines/distribution/index');
 const { runAnalytics } = require('../engines/analytics/index');
 
@@ -46,7 +46,7 @@ function registerProcessors() {
   const mockupQueue = getQueue(QUEUE_NAMES.MOCKUP_GENERATION);
   mockupQueue.process(async (job) => {
     logger.info('Processing mockup generation job', { jobId: job.id });
-    const result = await runMockupGeneration();
+    const result = await runMockupBatch();
     logger.info('Mockup generation job complete', result);
     return result;
   });

@@ -3,6 +3,12 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+// Mock the mockup engine to avoid pulling in sharp/archiver/etc.
+jest.mock('../../engines/5-mockup-generation/index', () => ({
+  runMockupBatch: jest.fn().mockResolvedValue({ processed: 5, errors: [], elapsed: 1000 }),
+  processArtworkMockups: jest.fn().mockResolvedValue({ artwork_id: 1 }),
+}));
+
 // Mock Bull queues to avoid real Redis calls in unit tests
 jest.mock('../../core/queue', () => {
   const mockAdd = jest.fn().mockResolvedValue({ id: 'mock-job-id' });

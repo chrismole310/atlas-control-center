@@ -12,6 +12,7 @@ jest.mock('../../core/orchestrator', () => ({
   dispatchScraping: jest.fn().mockResolvedValue({ id: 'mock-job-id' }),
   dispatchMarketIntelligence: jest.fn().mockResolvedValue({ id: 'mock-job-id' }),
   dispatchImageGeneration: jest.fn().mockResolvedValue({ target: 200, dispatched: 200, siloCount: 3 }),
+  dispatchMockupGeneration: jest.fn().mockResolvedValue({ id: 'mock-job-id' }),
   dispatchAnalytics: jest.fn().mockResolvedValue({ id: 'mock-job-id' }),
 }));
 
@@ -23,10 +24,10 @@ beforeEach(() => {
   cron.schedule.mockReturnValue({ destroy: jest.fn() });
 });
 
-test('startScheduler registers 4 cron jobs', () => {
+test('startScheduler registers 5 cron jobs', () => {
   const jobs = startScheduler();
-  expect(cron.schedule).toHaveBeenCalledTimes(4);
-  expect(jobs).toHaveLength(4);
+  expect(cron.schedule).toHaveBeenCalledTimes(5);
+  expect(jobs).toHaveLength(5);
 });
 
 test('startScheduler uses America/New_York timezone', () => {
@@ -42,5 +43,5 @@ test('stopScheduler destroys all jobs and clears the list', () => {
   cron.schedule.mockReturnValue({ destroy: mockDestroy });
   startScheduler();
   stopScheduler();
-  expect(mockDestroy).toHaveBeenCalledTimes(4);
+  expect(mockDestroy).toHaveBeenCalledTimes(5);
 });
