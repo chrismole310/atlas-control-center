@@ -15,6 +15,12 @@ const logger = createLogger('scraping-worker');
 function startScrapingWorker() {
   const queue = getQueue(QUEUE_NAMES.TREND_SCRAPING);
 
+  queue.on('stalled', (jobId) => {
+    logger.warn('Scraping job stalled — will be retried', { jobId });
+  });
+
+  // NOTE: Bull default lockDuration is 30s. Full scrapes with Playwright can take 2-5 min.
+  // If jobs stall in production, increase lockDuration in getQueue() config for this queue.
   queue.process(1, async (job) => {
     logger.info('Processing scraping job', { jobId: job.id, data: job.data });
 

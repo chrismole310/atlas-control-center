@@ -36,8 +36,15 @@ const logger = createLogger('trend-db');
 async function saveTrends(records) {
   if (!records || records.length === 0) return 0;
 
+  // Filter out records missing required upsert key fields
+  const validRecords = records.filter(r => r.platform && r.listing_url);
+  if (validRecords.length < records.length) {
+    logger.warn(`Dropped ${records.length - validRecords.length} records missing platform or listing_url`);
+  }
+  if (validRecords.length === 0) return 0;
+
   let count = 0;
-  for (const r of records) {
+  for (const r of validRecords) {
     await query(`
       INSERT INTO scraped_trends (
         platform, listing_url, title, description, price,
