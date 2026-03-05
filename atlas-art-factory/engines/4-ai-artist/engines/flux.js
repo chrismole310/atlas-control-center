@@ -6,10 +6,10 @@ const fs = require('fs');
 const https = require('https');
 
 const STORAGE_DIR = path.join(__dirname, '../../../storage/artworks');
-const FLUX_SCHNELL_MODEL = 'black-forest-labs/FLUX.1-schnell';
-const FLUX_DEV_MODEL = 'black-forest-labs/FLUX.1-dev';
-const DEFAULT_WIDTH = 2400;
-const DEFAULT_HEIGHT = 3000;
+const FLUX_SCHNELL_MODEL = 'black-forest-labs/flux-schnell';
+const FLUX_DEV_MODEL = 'black-forest-labs/flux-dev';
+const DEFAULT_ASPECT_RATIO = '2:3';   // portrait — standard for print art
+const DEFAULT_MEGAPIXELS = '1';        // ~1MP output, fast + cheap
 
 /**
  * Download an image from a URL to a local file path.
@@ -43,18 +43,30 @@ async function _downloadImage(url, dest) {
  */
 async function _generate(model, prompt, options) {
   const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
-  const width = options.width || DEFAULT_WIDTH;
-  const height = options.height || DEFAULT_HEIGHT;
+
+  // FLUX schnell/dev use aspect_ratio + megapixels, not width/height
+  const aspectRatio = options.aspectRatio || DEFAULT_ASPECT_RATIO;
+  const megapixels = options.megapixels || DEFAULT_MEGAPIXELS;
 
   let output;
   try {
-    output = await replicate.run(model, { input: { prompt, width, height, num_outputs: 1 } });
+    output = await replicate.run(model, {
+      input: {
+        prompt,
+        aspect_ratio: aspectRatio,
+        megapixels: megapixels,
+        num_outputs: 1,
+        output_format: 'png',
+        output_quality: 100,
+      },
+    });
   } catch (err) {
     throw new Error(`FLUX generation failed for model "${model}": ${err.message}`);
   }
 
-  // output is an array of URLs; use the first one
-  const imageUrl = Array.isArray(output) ? output[0] : output;
+  // Replicate SDK returns URL objects; extract the href string
+  const rawOutput = Array.isArray(output) ? output[0] : output;
+  const imageUrl = rawOutput instanceof URL ? rawOutput.href : String(rawOutput);
 
   const id = options.outputId || `flux_${Date.now()}`;
   const file_path = path.join(STORAGE_DIR, `${id}.png`);
@@ -67,7 +79,7 @@ async function _generate(model, prompt, options) {
 
   const engine = model.split('/')[1] || model;
 
-  return { id, file_path, engine, width, height, prompt, url: imageUrl };
+  return { id, file_path, engine, aspectRatio, prompt, url: imageUrl };
 }
 
 /**
