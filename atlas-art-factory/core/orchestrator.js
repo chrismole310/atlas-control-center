@@ -11,6 +11,7 @@ const { runTrendScraper } = require('../engines/trend-scraper/index');
 const { runMarketIntelligence } = require('../engines/2-market-intelligence/index');
 const { runImageProduction } = require('../engines/image-production/index');
 const { runMockupGeneration } = require('../engines/mockup-generator/index');
+const { runDistribution } = require('../engines/distribution/index');
 
 const logger = createLogger('orchestrator');
 
@@ -45,6 +46,14 @@ function registerProcessors() {
     logger.info('Processing mockup generation job', { jobId: job.id });
     const result = await runMockupGeneration();
     logger.info('Mockup generation job complete', result);
+    return result;
+  });
+
+  const distributionQueue = getQueue(QUEUE_NAMES.DISTRIBUTION);
+  distributionQueue.process(async (job) => {
+    logger.info('Processing distribution job', { jobId: job.id });
+    const result = await runDistribution();
+    logger.info('Distribution job complete', result);
     return result;
   });
 }
@@ -123,6 +132,16 @@ async function dispatchMockupGeneration() {
 }
 
 /**
+ * Dispatch the distribution job.
+ */
+async function dispatchDistribution() {
+  const queue = getQueue(QUEUE_NAMES.DISTRIBUTION);
+  const job = await queue.add({ task: 'distribute-listings', triggeredAt: new Date().toISOString() });
+  logger.info('Dispatched distribution job', { jobId: job.id });
+  return job;
+}
+
+/**
  * Run a full daily cycle (for manual trigger or testing).
  */
 async function runDailyCycle() {
@@ -132,6 +151,7 @@ async function runDailyCycle() {
     await dispatchMarketIntelligence();
     await dispatchImageGeneration();
     await dispatchMockupGeneration();
+    await dispatchDistribution();
     await dispatchAnalytics();
     logger.info('Daily cycle complete');
     return { success: true };
@@ -148,5 +168,6 @@ module.exports = {
   dispatchImageGeneration,
   dispatchAnalytics,
   dispatchMockupGeneration,
+  dispatchDistribution,
   runDailyCycle,
 };
