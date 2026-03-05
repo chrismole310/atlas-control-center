@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import ProductionTab from './components/ProductionTab'
+import TrendsTab from './components/TrendsTab'
+import AnalyticsTab from './components/AnalyticsTab'
 
 const API_BASE = 'http://localhost:3001'
 
@@ -37,10 +40,11 @@ interface ApiHealth {
   ts: string
 }
 
-type TabId = 'overview' | 'silos' | 'artists' | 'trends' | 'analytics' | 'settings'
+type TabId = 'overview' | 'production' | 'silos' | 'artists' | 'trends' | 'analytics' | 'settings'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
+  { id: 'production', label: 'Production' },
   { id: 'silos', label: 'Silos' },
   { id: 'artists', label: 'Artists' },
   { id: 'trends', label: 'Trends' },
@@ -150,8 +154,9 @@ export default function ArtFactoryPage() {
             {activeTab === 'overview' && <OverviewTab stats={stats} silos={silos} artists={artists} />}
             {activeTab === 'silos' && <SilosTab silos={silos} />}
             {activeTab === 'artists' && <ArtistsTab artists={artists} />}
-            {activeTab === 'trends' && <ComingSoonTab name="Trends" desc="Market intelligence and demand scoring coming in Phase 2." />}
-            {activeTab === 'analytics' && <ComingSoonTab name="Analytics" desc="Revenue analytics and adaptive learning coming in Phase 7." />}
+            {activeTab === 'production' && <ProductionTab />}
+            {activeTab === 'trends' && <TrendsTab />}
+            {activeTab === 'analytics' && <AnalyticsTab />}
             {activeTab === 'settings' && <ComingSoonTab name="Settings" desc="Configuration management coming soon." />}
           </>
         )}
