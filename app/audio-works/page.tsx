@@ -326,8 +326,9 @@ export default function AudioWorksPage() {
               <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Library</p>
               <button
                 onClick={() => {
+                  if (fileInputRef.current) fileInputRef.current.value = ""
                   setShowGenerateForm(v => {
-                    if (v) { setGenFile(null); setGenMsg(null) }
+                    if (v) { setGenFile(null); setGenMsg(null); setGenVoice("en_US-lessac-medium") }
                     return !v
                   })
                 }}
@@ -353,7 +354,7 @@ export default function AudioWorksPage() {
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full text-xs py-1.5 px-2 rounded border border-slate-600 bg-slate-700 hover:bg-slate-600 text-slate-300 text-left truncate transition-colors"
                   >
-                    {genFile ? genFile.name : "Choose file (.rtf, .docx, .txt)"}
+                    {genFile ? genFile.name : "Choose file (.rtf, .docx, .txt, .odt)"}
                   </button>
                 </div>
 
