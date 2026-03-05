@@ -48,4 +48,14 @@ describe('Database seed', () => {
     expect(parseInt(siloCount.rows[0].cnt)).toBe(50);
     expect(parseInt(artistCount.rows[0].cnt)).toBe(50);
   });
+
+  test('silo_keywords has no duplicate (silo_id, keyword) pairs', async () => {
+    const result = await query(`
+      SELECT silo_id, keyword, COUNT(*) AS cnt
+      FROM silo_keywords
+      GROUP BY silo_id, keyword
+      HAVING COUNT(*) > 1
+    `);
+    expect(result.rows.length).toBe(0);
+  });
 });

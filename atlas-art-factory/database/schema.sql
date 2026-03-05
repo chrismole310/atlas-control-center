@@ -92,6 +92,9 @@ CREATE TABLE IF NOT EXISTS silo_keywords (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_silo_keywords
+    ON silo_keywords (silo_id, keyword);
+
 -- ============================================
 -- AI ARTIST SYSTEM
 -- ============================================
