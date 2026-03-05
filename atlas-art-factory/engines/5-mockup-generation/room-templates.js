@@ -1,5 +1,5 @@
 'use strict';
-const { createCanvas } = require('canvas');
+const { createCanvas } = require('@napi-rs/canvas');
 
 // Room template definitions
 const ROOM_TEMPLATES = [
