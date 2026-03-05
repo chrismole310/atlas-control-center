@@ -10,8 +10,11 @@ const { createLogger } = require('./logger');
 const { runTrendScraper } = require('../engines/trend-scraper/index');
 const { runMarketIntelligence } = require('../engines/2-market-intelligence/index');
 const { runDailyBatch } = require('../engines/4-ai-artist/index');
-const { runMockupGeneration } = require('../engines/mockup-generator/index');
+const { runMockupBatch } = require('../engines/5-mockup-generation/index');
 const { runDistribution } = require('../engines/distribution/index');
+const { runAnalytics } = require('../engines/analytics/index');
+const { startMockupWorker } = require('./workers/mockup-worker');
+const { runModelDiscovery } = require('../engines/model-discovery/index');
 
 const logger = createLogger('orchestrator');
 
@@ -42,19 +45,29 @@ function registerProcessors() {
     return result;
   });
 
-  const mockupQueue = getQueue(QUEUE_NAMES.MOCKUP_GENERATION);
-  mockupQueue.process(async (job) => {
-    logger.info('Processing mockup generation job', { jobId: job.id });
-    const result = await runMockupGeneration();
-    logger.info('Mockup generation job complete', result);
-    return result;
-  });
+  startMockupWorker();
 
   const distributionQueue = getQueue(QUEUE_NAMES.DISTRIBUTION);
   distributionQueue.process(async (job) => {
     logger.info('Processing distribution job', { jobId: job.id });
     const result = await runDistribution();
     logger.info('Distribution job complete', result);
+    return result;
+  });
+
+  const analyticsQueue = getQueue(QUEUE_NAMES.ANALYTICS);
+  analyticsQueue.process(async (job) => {
+    logger.info('Processing analytics job', { jobId: job.id });
+    const result = await runAnalytics();
+    logger.info('Analytics job complete', result);
+    return result;
+  });
+
+  const discoveryQueue = getQueue(QUEUE_NAMES.MODEL_DISCOVERY);
+  discoveryQueue.process(async (job) => {
+    logger.info('Processing model discovery job', { jobId: job.id });
+    const result = await runModelDiscovery();
+    logger.info('Model discovery job complete', result);
     return result;
   });
 }
@@ -85,15 +98,22 @@ async function dispatchMarketIntelligence() {
  */
 async function dispatchImageGeneration(dailyTarget = 200) {
   // schema.sql: silos uses status VARCHAR(20) DEFAULT 'active' — no is_active column
-  const silos = await query(
-    "SELECT id, name, priority FROM silos WHERE status = 'active' ORDER BY priority DESC"
-  );
+  let silos;
+  try {
+    const result = await query(
+      "SELECT id, name, priority FROM silos WHERE status = 'active' ORDER BY priority DESC"
+    );
+    silos = result.rows;
+  } catch (dbErr) {
+    logger.error('Failed to fetch active silos for image generation dispatch', { error: dbErr.message });
+    throw dbErr;
+  }
 
-  const totalPriority = silos.rows.reduce((sum, s) => sum + (s.priority || 1), 0);
+  const totalPriority = silos.reduce((sum, s) => sum + (s.priority || 1), 0);
   const queue = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
   let dispatched = 0;
 
-  for (const silo of silos.rows) {
+  for (const silo of silos) {
     const allocation = Math.round((silo.priority / totalPriority) * dailyTarget);
     if (allocation < 1) continue;
 
@@ -105,11 +125,11 @@ async function dispatchImageGeneration(dailyTarget = 200) {
       triggeredAt: new Date().toISOString(),
     });
     dispatched += allocation;
-    logger.info(`Dispatched image generation for silo ${silo.name}`, { jobId: job.id, count: allocation });
+    logger.info('Dispatched image generation for silo', { siloName: silo.name, jobId: job.id, count: allocation });
   }
 
-  logger.info(`Total image generation jobs dispatched`, { target: dailyTarget, dispatched });
-  return { target: dailyTarget, dispatched, siloCount: silos.rows.length };
+  logger.info('Total image generation jobs dispatched', { target: dailyTarget, dispatched });
+  return { target: dailyTarget, dispatched, siloCount: silos.length };
 }
 
 /**
@@ -143,6 +163,16 @@ async function dispatchDistribution() {
 }
 
 /**
+ * Dispatch the weekly model discovery job.
+ */
+async function dispatchModelDiscovery() {
+  const queue = getQueue(QUEUE_NAMES.MODEL_DISCOVERY);
+  const job = await queue.add({ task: 'discover-models', triggeredAt: new Date().toISOString() });
+  logger.info('Dispatched model discovery job', { jobId: job.id });
+  return job;
+}
+
+/**
  * Run a full daily cycle (for manual trigger or testing).
  */
 async function runDailyCycle() {
@@ -170,5 +200,6 @@ module.exports = {
   dispatchAnalytics,
   dispatchMockupGeneration,
   dispatchDistribution,
+  dispatchModelDiscovery,
   runDailyCycle,
 };

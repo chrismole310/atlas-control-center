@@ -136,6 +136,99 @@ app.get('/api/intelligence', async (req, res) => {
   }
 });
 
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+app.get('/api/analytics/daily', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const { rows } = await query(
+      'SELECT * FROM analytics_daily ORDER BY date DESC LIMIT $1', [days]
+    );
+    res.json({ analytics: rows, count: rows.length });
+  } catch (err) {
+    logger.error('GET /api/analytics/daily failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/analytics/top-artworks', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const { rows } = await query(
+      `SELECT pm.artwork_id, a.title, a.master_image_url,
+              SUM(pm.revenue) AS total_revenue, SUM(pm.sales) AS total_sales,
+              AVG(pm.conversion_rate) AS avg_conversion
+       FROM performance_metrics pm
+       JOIN artworks a ON a.id = pm.artwork_id
+       GROUP BY pm.artwork_id, a.title, a.master_image_url
+       ORDER BY total_revenue DESC
+       LIMIT $1`, [limit]
+    );
+    res.json({ artworks: rows, count: rows.length });
+  } catch (err) {
+    logger.error('GET /api/analytics/top-artworks failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Trends ───────────────────────────────────────────────────────────────────
+
+app.get('/api/trends', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const { rows } = await query(
+      `SELECT keyword, demand_score, trend_direction, search_volume, competition_count, saturation_level
+       FROM demand_scores
+       ORDER BY demand_score DESC
+       LIMIT $1`, [limit]
+    );
+    res.json({ trends: rows, count: rows.length });
+  } catch (err) {
+    logger.error('GET /api/trends failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Production ───────────────────────────────────────────────────────────────
+
+app.get('/api/production/status', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { rows: [artworks] } = await query(
+      'SELECT COUNT(*) AS count FROM artworks WHERE created_at::date = $1', [today]
+    );
+    const { rows: [listings] } = await query(
+      'SELECT COUNT(*) AS count FROM listings WHERE published_at::date = $1', [today]
+    );
+    const { rows: [pending] } = await query(
+      `SELECT COUNT(*) AS count FROM artworks WHERE status = 'approved' AND id NOT IN (SELECT artwork_id FROM listings)`
+    );
+    res.json({
+      artworks_today: parseInt(artworks?.count || '0', 10),
+      listings_today: parseInt(listings?.count || '0', 10),
+      pending_distribution: parseInt(pending?.count || '0', 10),
+      ts: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.error('GET /api/production/status failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Model Discovery ──────────────────────────────────────────────────────────
+
+app.get('/api/models/discovered', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT * FROM discovered_models ORDER BY discovered_at DESC LIMIT 50`
+    );
+    res.json({ models: rows, count: rows.length });
+  } catch (err) {
+    logger.error('GET /api/models/discovered failed', { error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── Server ───────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT || '3001');

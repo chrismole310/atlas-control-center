@@ -7,6 +7,7 @@ const {
   dispatchScraping,
   dispatchMarketIntelligence,
   dispatchImageGeneration,
+  dispatchMockupGeneration,
   dispatchAnalytics,
 } = require('./orchestrator');
 const { createLogger } = require('./logger');
@@ -21,6 +22,7 @@ const jobs = [];
  *   06:00 → Scrape all platforms
  *   08:00 → Market intelligence (demand scores)
  *   09:30 → Image generation pipeline
+ *   12:00 → Mockup generation (after image gen completes)
  *   22:00 → Analytics collection
  */
 function startScheduler() {
@@ -42,6 +44,12 @@ function startScheduler() {
   jobs.push(cron.schedule('30 9 * * *', async () => {
     logger.info('Cron: starting image generation run');
     await dispatchImageGeneration().catch(err => logger.error('Generation cron failed', { error: err.message }));
+  }, { timezone: 'America/New_York' }));
+
+  // 12:00 — Mockup generation (after image gen completes)
+  jobs.push(cron.schedule('0 12 * * *', async () => {
+    logger.info('Cron: starting mockup generation run');
+    await dispatchMockupGeneration().catch(err => logger.error('Mockup cron failed', { error: err.message }));
   }, { timezone: 'America/New_York' }));
 
   // 22:00 — Analytics

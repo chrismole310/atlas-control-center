@@ -3,6 +3,17 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+// Mock the mockup engine to avoid pulling in sharp/archiver/etc.
+jest.mock('../../engines/5-mockup-generation/index', () => ({
+  runMockupBatch: jest.fn().mockResolvedValue({ processed: 5, errors: [], elapsed: 1000 }),
+  processArtworkMockups: jest.fn().mockResolvedValue({ artwork_id: 1 }),
+}));
+
+// Mock the mockup worker so the orchestrator can call startMockupWorker()
+jest.mock('../../core/workers/mockup-worker', () => ({
+  startMockupWorker: jest.fn(),
+}));
+
 // Mock Bull queues to avoid real Redis calls in unit tests
 jest.mock('../../core/queue', () => {
   const mockAdd = jest.fn().mockResolvedValue({ id: 'mock-job-id' });
@@ -34,11 +45,15 @@ jest.mock('../../core/database', () => ({
 }));
 
 const { getQueue } = require('../../core/queue');
+const { startMockupWorker } = require('../../core/workers/mockup-worker');
 const {
   dispatchScraping,
   dispatchMarketIntelligence,
   dispatchImageGeneration,
   dispatchAnalytics,
+  dispatchMockupGeneration,
+  dispatchDistribution,
+  registerProcessors,
   runDailyCycle,
 } = require('../../core/orchestrator');
 
@@ -46,7 +61,12 @@ describe('Orchestrator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset the mockAdd to return a new resolved value each time
-    getQueue.mockReturnValue({ add: jest.fn().mockResolvedValue({ id: 'mock-job-id' }), name: 'mock-queue' });
+    getQueue.mockReturnValue({
+      add: jest.fn().mockResolvedValue({ id: 'mock-job-id' }),
+      process: jest.fn(),
+      on: jest.fn(),
+      name: 'mock-queue',
+    });
   });
 
   test('dispatchScraping adds a job to the trend-scraping queue', async () => {
@@ -88,5 +108,22 @@ describe('Orchestrator', () => {
     const result = await runDailyCycle();
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
+  });
+
+  test('dispatchMockupGeneration adds a job to the mockup-generation queue', async () => {
+    const job = await dispatchMockupGeneration();
+    expect(job.id).toBe('mock-job-id');
+    expect(getQueue).toHaveBeenCalledWith('mockup-generation');
+  });
+
+  test('dispatchDistribution adds a job to the distribution queue', async () => {
+    const job = await dispatchDistribution();
+    expect(job.id).toBe('mock-job-id');
+    expect(getQueue).toHaveBeenCalledWith('distribution');
+  });
+
+  test('registerProcessors calls startMockupWorker', () => {
+    registerProcessors();
+    expect(startMockupWorker).toHaveBeenCalled();
   });
 });
