@@ -181,28 +181,37 @@ async function rankOpportunities() {
         ? parseFloat((100 - Math.min(100, parseFloat(saturation_level))).toFixed(2))
         : 50;
 
-      // Upsert into market_opportunities — delete existing niche entry then insert
-      await query(`
-        DELETE FROM market_opportunities WHERE niche = $1
-      `, [keyword]);
+      // Upsert into market_opportunities — delete existing niche entry then insert,
+      // wrapped in a transaction to ensure atomicity.
+      await query('BEGIN');
+      try {
+        await query(`
+          DELETE FROM market_opportunities WHERE niche = $1
+        `, [keyword]);
 
-      await query(`
-        INSERT INTO market_opportunities
-          (niche, demand_score, competition_level, profit_potential, trend_strength,
-           recommended_price, recommended_styles, recommended_keywords, opportunity_rank,
-           status, identified_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', NOW(), NOW())
-      `, [
-        keyword,
-        demand_score,
-        competitionLevel,
-        profitPotential,
-        trendStrength,
-        recommendedPrice,
-        [recommendedStyle],
-        topKeywords,
-        rank,
-      ]);
+        await query(`
+          INSERT INTO market_opportunities
+            (niche, demand_score, competition_level, profit_potential, trend_strength,
+             recommended_price, recommended_styles, recommended_keywords, opportunity_rank,
+             status, identified_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', NOW(), NOW())
+        `, [
+          keyword,
+          demand_score,
+          competitionLevel,
+          profitPotential,
+          trendStrength,
+          recommendedPrice,
+          [recommendedStyle],
+          topKeywords,
+          rank,
+        ]);
+
+        await query('COMMIT');
+      } catch (err) {
+        await query('ROLLBACK');
+        throw err;
+      }
 
       opportunities.push({
         niche: keyword,
@@ -217,7 +226,7 @@ async function rankOpportunities() {
         status: 'active',
       });
     } catch (err) {
-      console.error(`Failed to rank keyword "${row.keyword}"`, err);
+      logger.error(`Failed to rank keyword "${row.keyword}"`, err);
     }
   }
 

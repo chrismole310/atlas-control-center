@@ -45,9 +45,10 @@ async function detectTrendAlerts(options = {}) {
   const threshold = options.threshold !== undefined ? options.threshold : 0.20;
   const minScore  = options.minScore  !== undefined ? options.minScore  : 30;
 
-  // Fetch qualifying rows: trend_direction = 'rising', score above minScore,
-  // ALERT_MIN_SCORE, and TREND_THRESHOLD — all enforced in SQL to avoid
-  // returning rows that would be silently discarded in JS.
+  // Fetch qualifying rows: trend_direction = 'rising', score above the single
+  // effective floor (max of all three thresholds) to avoid redundant conditions.
+  const effectiveFloor = Math.max(minScore, ALERT_MIN_SCORE, TREND_THRESHOLD);
+
   let result;
   try {
     result = await query(`
@@ -59,11 +60,9 @@ async function detectTrendAlerts(options = {}) {
       LEFT JOIN silo_keywords sk ON sk.keyword = ds.keyword
       LEFT JOIN silos         s  ON s.id = sk.silo_id
       WHERE ds.trend_direction = 'rising'
-        AND ds.demand_score   >= $1
-        AND ds.demand_score   >= $2
-        AND ds.demand_score   >= $3
+        AND ds.demand_score >= $1
       ORDER BY ds.demand_score DESC
-    `, [Math.max(minScore, ALERT_MIN_SCORE), ALERT_MIN_SCORE, TREND_THRESHOLD]);
+    `, [effectiveFloor]);
   } catch (err) {
     logger.error('Failed to query demand_scores for trend alerts', err);
     return [];

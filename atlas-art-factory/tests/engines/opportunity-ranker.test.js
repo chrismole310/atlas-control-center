@@ -38,7 +38,8 @@ describe('rankOpportunities', () => {
     // Then DELETE + INSERT → 2 queries per kw
     // Total per keyword: 5 queries, 3 keywords = 15 queries (+ 1 initial = 16 total)
 
-    // Helper to mock all 5 sub-queries for one keyword
+    // Helper to mock all 7 sub-queries for one keyword
+    // (getRecommendedPrice, getTopKeywords, getRecommendedStyle, BEGIN, DELETE, INSERT, COMMIT)
     function mockKeywordQueries({ prices = [{ price: 14.99 }], trendRows = [], styleRows = [] } = {}) {
       // getRecommendedPrice
       query.mockResolvedValueOnce({ rows: prices });
@@ -46,10 +47,14 @@ describe('rankOpportunities', () => {
       query.mockResolvedValueOnce({ rows: trendRows });
       // getRecommendedStyle
       query.mockResolvedValueOnce({ rows: styleRows });
+      // BEGIN
+      query.mockResolvedValueOnce({});
       // DELETE
       query.mockResolvedValueOnce({ rowCount: 0 });
       // INSERT
       query.mockResolvedValueOnce({ rowCount: 1 });
+      // COMMIT
+      query.mockResolvedValueOnce({});
     }
 
     mockKeywordQueries({
@@ -114,18 +119,22 @@ describe('rankOpportunities', () => {
       ],
     });
 
-    // nursery art: all 5 sub-queries succeed
+    // nursery art: all 7 sub-queries succeed
     query.mockResolvedValueOnce({ rows: [{ price: 20 }] });           // getRecommendedPrice
     query.mockResolvedValueOnce({ rows: [{ tags: ['baby'], keywords: ['nursery'] }] }); // getTopKeywords
     query.mockResolvedValueOnce({ rows: [{ title: 'watercolor art', tags: [], style: null, engagement: 100 }] }); // getRecommendedStyle
+    query.mockResolvedValueOnce({});                                  // BEGIN
     query.mockResolvedValueOnce({ rowCount: 0 });                     // DELETE
     query.mockResolvedValueOnce({ rowCount: 1 });                     // INSERT
+    query.mockResolvedValueOnce({});                                  // COMMIT
 
-    // boho print: DELETE query throws
+    // boho print: DELETE query throws (after BEGIN succeeds), then ROLLBACK
     query.mockResolvedValueOnce({ rows: [{ price: 15 }] });           // getRecommendedPrice
     query.mockResolvedValueOnce({ rows: [] });                        // getTopKeywords
     query.mockResolvedValueOnce({ rows: [] });                        // getRecommendedStyle
+    query.mockResolvedValueOnce({});                                  // BEGIN
     query.mockRejectedValueOnce(new Error('DB error on DELETE'));      // DELETE throws
+    query.mockResolvedValueOnce({});                                  // ROLLBACK
 
     const result = await rankOpportunities();
 
