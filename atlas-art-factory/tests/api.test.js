@@ -13,21 +13,26 @@ jest.mock('../core/database', () => {
 });
 
 const { query } = require('../core/database');
-const { createApp } = require('../api/index');
-
-let app;
-beforeAll(() => { app = createApp(); });
+const { app } = require('../api/index');
 
 beforeEach(() => { query.mockReset(); });
 
-test('GET /health returns ok', async () => {
+test('GET /health returns ok when DB is connected', async () => {
+  query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
   const res = await request(app).get('/health');
   expect(res.status).toBe(200);
   expect(res.body.status).toBe('ok');
-  expect(res.body.service).toBe('atlas-art-factory');
+  expect(res.body.db).toBe('connected');
 });
 
-test('GET /api/silos returns array', async () => {
+test('GET /health returns 503 when DB is down', async () => {
+  query.mockRejectedValueOnce(new Error('connection refused'));
+  const res = await request(app).get('/health');
+  expect(res.status).toBe(503);
+  expect(res.body.status).toBe('error');
+});
+
+test('GET /api/silos returns wrapped silos array', async () => {
   const fakeSilos = Array.from({ length: 50 }, (_, i) => ({
     id: i + 1, name: `silo-${i}`, category: 'test', priority: 50,
   }));
@@ -35,41 +40,52 @@ test('GET /api/silos returns array', async () => {
 
   const res = await request(app).get('/api/silos');
   expect(res.status).toBe(200);
-  expect(res.body.length).toBe(50);
+  expect(res.body.silos).toHaveLength(50);
+  expect(res.body.count).toBe(50);
 });
 
-test('GET /api/stats returns production stats', async () => {
+test('GET /api/artists returns wrapped artists with silo_name', async () => {
+  const fakeArtists = [{ id: 1, name: 'TestArtist', silo_name: 'abstract-modern' }];
+  query.mockResolvedValueOnce({ rows: fakeArtists });
+
+  const res = await request(app).get('/api/artists');
+  expect(res.status).toBe(200);
+  expect(res.body.artists).toHaveLength(1);
+  expect(res.body.artists[0].silo_name).toBe('abstract-modern');
+});
+
+test('GET /api/stats returns counts', async () => {
   query
-    .mockResolvedValueOnce({ rows: [{ n: '5' }] })    // artworks
-    .mockResolvedValueOnce({ rows: [{ n: '120' }] })   // listings
-    .mockResolvedValueOnce({ rows: [{ total: '42.50' }] }) // revenue
-    .mockResolvedValueOnce({ rows: [{ n: '8' }] });    // opportunities
+    .mockResolvedValueOnce({ rows: [{ cnt: '50' }] })   // silos
+    .mockResolvedValueOnce({ rows: [{ cnt: '50' }] })   // artists
+    .mockResolvedValueOnce({ rows: [{ cnt: '0' }] })    // artworks
+    .mockResolvedValueOnce({ rows: [{ cnt: '0' }] });   // listings
 
   const res = await request(app).get('/api/stats');
   expect(res.status).toBe(200);
-  expect(res.body).toHaveProperty('artworks_today');
-  expect(res.body).toHaveProperty('listings_total');
-  expect(res.body).toHaveProperty('revenue_today');
-  expect(res.body.artworks_today).toBe(5);
-  expect(res.body.listings_total).toBe(120);
-  expect(res.body.revenue_today).toBe(42.50);
-});
-
-test('GET /api/artworks returns array with default limit', async () => {
-  query.mockResolvedValueOnce({ rows: [{ id: 1, title: 'test' }] });
-  const res = await request(app).get('/api/artworks');
-  expect(res.status).toBe(200);
-  expect(Array.isArray(res.body)).toBe(true);
-  // Verify the query was called with limit 50
-  expect(query).toHaveBeenCalledWith(
-    expect.stringContaining('LIMIT'),
-    [50]
-  );
+  expect(res.body.silos).toBe(50);
+  expect(res.body.artists).toBe(50);
+  expect(res.body.artworks).toBe(0);
+  expect(res.body.listings).toBe(0);
+  expect(res.body).toHaveProperty('ts');
 });
 
 test('GET /api/silos returns 500 on DB error', async () => {
   query.mockRejectedValueOnce(new Error('connection refused'));
   const res = await request(app).get('/api/silos');
   expect(res.status).toBe(500);
-  expect(res.body.error).toBe('connection refused');
+  expect(res.body.error).toBe('Internal server error');
+});
+
+test('GET /api/silos/:id returns single silo', async () => {
+  query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'abstract-modern' }] });
+  const res = await request(app).get('/api/silos/1');
+  expect(res.status).toBe(200);
+  expect(res.body.name).toBe('abstract-modern');
+});
+
+test('GET /api/silos/:id returns 404 for missing silo', async () => {
+  query.mockResolvedValueOnce({ rows: [] });
+  const res = await request(app).get('/api/silos/999');
+  expect(res.status).toBe(404);
 });
