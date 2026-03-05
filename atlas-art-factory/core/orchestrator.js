@@ -9,7 +9,7 @@ const { createLogger } = require('./logger');
 
 const { runTrendScraper } = require('../engines/trend-scraper/index');
 const { runMarketIntelligence } = require('../engines/2-market-intelligence/index');
-const { runImageProduction } = require('../engines/image-production/index');
+const { runDailyBatch } = require('../engines/4-ai-artist/index');
 const { runMockupGeneration } = require('../engines/mockup-generator/index');
 const { runDistribution } = require('../engines/distribution/index');
 
@@ -36,7 +36,8 @@ function registerProcessors() {
   const imageQueue = getQueue(QUEUE_NAMES.IMAGE_GENERATION);
   imageQueue.process(async (job) => {
     logger.info('Processing image generation job', { jobId: job.id });
-    const result = await runImageProduction();
+    const dailyTarget = (job.data && job.data.count) || 200;
+    const result = await runDailyBatch({ dailyTarget });
     logger.info('Image generation job complete', result);
     return result;
   });
