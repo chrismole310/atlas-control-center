@@ -33,7 +33,10 @@ _VOICES = [
 
 
 def _is_voice_installed(name: str) -> bool:
-    return (_VOICES_DIR / f"{name}.onnx").exists()
+    return (
+        (_VOICES_DIR / f"{name}.onnx").exists()
+        and (_VOICES_DIR / f"{name}.onnx.json").exists()
+    )
 
 
 def _download_voice(name: str, hf_path: str) -> None:
@@ -58,7 +61,12 @@ def _download_voice(name: str, hf_path: str) -> None:
 
 def _download_and_generate(book_id: int, voice: str, hf_path: str) -> None:
     """Download voice model then generate audiobook (for chaining in BackgroundTask)."""
-    _download_voice(voice, hf_path)
+    try:
+        _download_voice(voice, hf_path)
+    except Exception as exc:
+        with get_conn() as conn:
+            conn.execute("UPDATE pub_books SET status='failed' WHERE id=?", (book_id,))
+        raise RuntimeError(f"Voice download failed for book {book_id}: {exc}") from exc
     generate_audiobook(book_id, voice)
 
 
@@ -445,10 +453,7 @@ def register_audiobook_routes(app):
             str(path),
             media_type="audio/mp4",
             filename=filename,
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-                "Accept-Ranges": "bytes",
-            },
+            headers={"Accept-Ranges": "bytes"},
         )
 
     @app.post("/api/v1/audiobooks/{audiobook_id}/regenerate")
