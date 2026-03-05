@@ -42,11 +42,18 @@ def _download_voice(name: str, hf_path: str) -> None:
     for ext in [".onnx", ".onnx.json"]:
         fname = f"{name}{ext}"
         dest = _VOICES_DIR / fname
-        if not dest.exists():
-            url = f"{_HF_BASE}/{hf_path}/{fname}"
-            print(f"[Voices] Downloading {fname} from {url}")
-            urllib.request.urlretrieve(url, str(dest))
+        if dest.exists():
+            continue
+        tmp = dest.with_suffix(dest.suffix + ".tmp")
+        url = f"{_HF_BASE}/{hf_path}/{fname}"
+        print(f"[Voices] Downloading {fname} from {url}")
+        try:
+            urllib.request.urlretrieve(url, str(tmp))
+            tmp.rename(dest)
             print(f"[Voices] Saved {fname}")
+        except Exception as exc:
+            tmp.unlink(missing_ok=True)
+            raise RuntimeError(f"Failed to download {fname}: {exc}") from exc
 
 
 def _download_and_generate(book_id: int, voice: str, hf_path: str) -> None:
@@ -189,7 +196,7 @@ def register_audiobook_routes(app):
                 """
                 SELECT id, title, author, slug, status
                 FROM pub_books
-                WHERE status IN ('generating_audio', 'formatted', 'failed')
+                WHERE status IN ('generating_audio', 'failed')
                 AND id NOT IN (SELECT book_id FROM pub_audiobook_versions)
                 ORDER BY id DESC
                 """
@@ -380,6 +387,10 @@ def register_audiobook_routes(app):
         title = re.sub(r"[\s_-]+", " ", safe_stem).title()
         base_slug = re.sub(r"[\s_]+", "-", safe_stem.lower())
         base_slug = re.sub(r"-+", "-", base_slug).strip("-")
+        if not base_slug:
+            base_slug = "untitled"
+        if not title:
+            title = "Untitled"
 
         # Ensure unique slug
         slug = base_slug
@@ -397,7 +408,7 @@ def register_audiobook_routes(app):
         with get_conn() as conn:
             cur = conn.execute(
                 "INSERT INTO pub_books (title, slug, manuscript_path, status) VALUES (?,?,?,?)",
-                (title, slug, str(save_path), "formatted"),
+                (title, slug, str(save_path), "generating_audio"),
             )
             book_id = cur.lastrowid
 
@@ -434,7 +445,10 @@ def register_audiobook_routes(app):
             str(path),
             media_type="audio/mp4",
             filename=filename,
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Accept-Ranges": "bytes",
+            },
         )
 
     @app.post("/api/v1/audiobooks/{audiobook_id}/regenerate")
