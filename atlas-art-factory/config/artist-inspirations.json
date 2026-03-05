@@ -23,5 +23,50 @@
   { "id": 22, "name": "Georgia O'Keeffe", "category": "american_modern", "era": "1920s-1980s", "culturalInfluence": 95, "marketValueTier": "millions", "styleCharacteristics": { "technique": "enlarged natural forms", "iconicElements": ["enlarged flowers", "desert bones", "New Mexico landscapes"] }, "colorSignatures": { "primary": ["#CD853F", "#FF7F50", "#8B4513", "#F5DEB3"], "palette": "southwestern warm desert" }, "compositionPatterns": { "layout": "close-up enlarged" }, "atlasApplication": { "promptModifiers": ["georgia o'keeffe style", "enlarged natural forms", "desert palette", "spiritual abstraction"] } },
   { "id": 23, "name": "Helen Frankenthaler", "category": "abstract", "era": "1950s-2000s", "culturalInfluence": 89, "marketValueTier": "millions", "styleCharacteristics": { "technique": "color staining, poured paint", "iconicElements": ["color stains", "organic shapes", "lyrical abstraction"] }, "colorSignatures": { "primary": ["#FF69B4", "#87CEEB", "#98FB98", "#DDA0DD"], "palette": "soft lyrical pastels" }, "compositionPatterns": { "layout": "organic flowing stain" }, "atlasApplication": { "promptModifiers": ["frankenthaler style", "color stain painting", "soft organic forms", "poured paint"] } },
   { "id": 24, "name": "Ellsworth Kelly", "category": "minimalism", "era": "1950s-2010s", "culturalInfluence": 87, "marketValueTier": "millions", "styleCharacteristics": { "technique": "hard-edge abstraction, pure color", "iconicElements": ["shaped canvases", "pure color fields", "plant-inspired forms"] }, "colorSignatures": { "primary": ["#FF0000", "#0000FF", "#FFFF00", "#000000"], "palette": "pure bold primaries" }, "compositionPatterns": { "layout": "single form against white" }, "atlasApplication": { "promptModifiers": ["ellsworth kelly style", "bold color shapes", "hard edge abstraction", "pure color"] } },
-  { "id": 25, "name": "Barbara Kruger", "category": "conceptual", "era": "1980s-present", "culturalInfluence": 92, "marketValueTier": "high", "styleCharacteristics": { "technique": "text over image, red bars", "iconicElements": ["bold futura text", "red stripes", "black white photo"] }, "colorSignatures": { "primary": ["#FF0000", "#000000", "#FFFFFF"], "palette": "stark red black white" }, "compositionPatterns": { "layout": "photo with text overlay" }, "atlasApplication": { "promptModifiers": ["barbara kruger style", "bold text over image", "red black white", "feminist message"] } }
+  { "id": 25, "name": "Barbara Kruger", "category": "conceptual", "era": "1980s-present", "culturalInfluence": 92, "marketValueTier": "high", "styleCharacteristics": { "technique": "text over image, red bars", "iconicElements": ["bold futura text", "red stripes", "black white photo"] }, "colorSignatures": { "primary": ["#FF0000", "#000000", "#FFFFFF"], "palette": "stark red black white" }, "compositionPatterns": { "layout": "photo with text overlay" }, "atlasApplication": { "promptModifiers": ["barbara kruger style", "bold text over image", "red black white", "feminist message"] } },
+  {
+    "id": 26,
+    "name": "Frank Stella",
+    "culturalInfluenceScore": 82,
+    "era": "1960s-present",
+    "nationality": "American",
+    "medium": "Painting, sculpture",
+    "colorSignatures": ["bold geometric", "flat color", "shaped canvas"],
+    "compositionPatterns": ["geometric abstraction", "shaped canvas", "minimalist stripes"],
+    "styleCharacteristics": ["hard-edge painting", "post-painterly abstraction", "systematic geometry"],
+    "atlasApplication": {
+      "promptModifiers": ["Frank Stella style", "geometric abstraction", "bold flat color", "minimalist pattern"],
+      "bestForStyles": ["abstract", "geometric", "minimalist"]
+    }
+  },
+  {
+    "id": 27,
+    "name": "Bridget Riley",
+    "culturalInfluenceScore": 79,
+    "era": "1960s-present",
+    "nationality": "British",
+    "medium": "Painting",
+    "colorSignatures": ["optical illusion", "black and white", "vibrant stripes"],
+    "compositionPatterns": ["op art", "optical illusion", "repetitive pattern"],
+    "styleCharacteristics": ["op art movement", "perceptual illusion", "mathematical precision"],
+    "atlasApplication": {
+      "promptModifiers": ["Bridget Riley op art", "optical illusion pattern", "perceptual vibration", "geometric repetition"],
+      "bestForStyles": ["abstract", "op art", "geometric"]
+    }
+  },
+  {
+    "id": 28,
+    "name": "Gerhard Richter",
+    "culturalInfluenceScore": 88,
+    "era": "1960s-present",
+    "nationality": "German",
+    "medium": "Painting, photography",
+    "colorSignatures": ["photorealistic blur", "grey abstraction", "squeegee texture"],
+    "compositionPatterns": ["photo-painting", "abstract squeegee", "color chart"],
+    "styleCharacteristics": ["photo-realism", "abstract painting", "conceptual questioning"],
+    "atlasApplication": {
+      "promptModifiers": ["Gerhard Richter style", "photo-painting blur", "squeegee abstraction", "conceptual realism"],
+      "bestForStyles": ["abstract", "photorealistic", "contemporary"]
+    }
+  }
 ]

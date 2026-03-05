@@ -9,9 +9,9 @@ describe('DNA seed', () => {
     await closePool();
   });
 
-  test('artist_inspirations has 25 rows', async () => {
+  test('artist_inspirations has 28 rows', async () => {
     const result = await query('SELECT COUNT(*) AS cnt FROM artist_inspirations');
-    expect(parseInt(result.rows[0].cnt)).toBe(25);
+    expect(parseInt(result.rows[0].cnt)).toBe(28);
   });
 
   test('style_clusters has 7 rows', async () => {
@@ -50,7 +50,7 @@ describe('DNA seed', () => {
     });
     const inspCount = await query('SELECT COUNT(*) AS cnt FROM artist_inspirations');
     const clusterCount = await query('SELECT COUNT(*) AS cnt FROM style_clusters');
-    expect(parseInt(inspCount.rows[0].cnt)).toBe(25);
+    expect(parseInt(inspCount.rows[0].cnt)).toBe(28);
     expect(parseInt(clusterCount.rows[0].cnt)).toBe(7);
   });
 });

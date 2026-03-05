@@ -28,14 +28,15 @@ async function seedInspirations(inspirations) {
     const result = await query(
       `INSERT INTO artist_inspirations
          (name, category, era, style_characteristics, color_signatures,
-          composition_patterns, market_value_tier, cultural_influence, atlas_application)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          composition_patterns, famous_works, market_value_tier, cultural_influence, atlas_application)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (name) DO UPDATE SET
          category            = EXCLUDED.category,
          era                 = EXCLUDED.era,
          style_characteristics = EXCLUDED.style_characteristics,
          color_signatures    = EXCLUDED.color_signatures,
          composition_patterns = EXCLUDED.composition_patterns,
+         famous_works        = EXCLUDED.famous_works,
          market_value_tier   = EXCLUDED.market_value_tier,
          cultural_influence  = EXCLUDED.cultural_influence,
          atlas_application   = EXCLUDED.atlas_application
@@ -47,6 +48,7 @@ async function seedInspirations(inspirations) {
         JSON.stringify(insp.styleCharacteristics || {}),
         JSON.stringify(insp.colorSignatures || {}),
         JSON.stringify(insp.compositionPatterns || {}),
+        insp.famousWorks || [],
         insp.marketValueTier || null,
         insp.culturalInfluence || null,
         JSON.stringify(insp.atlasApplication || {}),
@@ -79,7 +81,13 @@ async function seedStyleClusters(clusters, inspirationIdMap) {
   for (const cluster of clusters) {
     // Resolve inspiration IDs from the inspirationArtists names array
     const inspirationIds = (cluster.inspirationArtists || [])
-      .map(artistName => inspirationIdMap[artistName])
+      .map(artistName => {
+        const inspId = inspirationIdMap[artistName];
+        if (!inspId) {
+          logger.warn(`Style cluster '${cluster.name}' references unknown inspiration: '${artistName}'`);
+        }
+        return inspId;
+      })
       .filter(Boolean);
 
     const result = await query(
