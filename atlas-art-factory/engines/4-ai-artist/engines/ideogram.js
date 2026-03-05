@@ -8,6 +8,8 @@ const https = require('https');
 const STORAGE_DIR = path.join(__dirname, '../../../storage/artworks');
 const IDEOGRAM_API_URL = 'https://api.ideogram.ai/generate';
 const DEFAULT_ASPECT_RATIO = 'ASPECT_2_3';
+const IDEOGRAM_MODEL = 'V_2';
+const IDEOGRAM_MAGIC_PROMPT = 'AUTO';
 
 /**
  * Download an image from a URL to a local file path.
@@ -49,8 +51,8 @@ async function generate(prompt, options = {}) {
         image_request: {
           prompt,
           aspect_ratio: aspectRatio,
-          model: 'V_2',
-          magic_prompt_option: 'AUTO',
+          model: IDEOGRAM_MODEL,
+          magic_prompt_option: IDEOGRAM_MAGIC_PROMPT,
         },
       },
       {
@@ -78,7 +80,11 @@ async function generate(prompt, options = {}) {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
   // Download image to local file
-  await _downloadImage(imageUrl, file_path);
+  try {
+    await _downloadImage(imageUrl, file_path);
+  } catch (err) {
+    throw new Error(`Ideogram image download failed: ${err.message}`);
+  }
 
   return { id, file_path, engine: 'ideogram', width, height, prompt, url: imageUrl };
 }

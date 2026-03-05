@@ -125,4 +125,24 @@ describe('generate (Ideogram) error paths', () => {
       'Ideogram generation failed'
     );
   });
+
+  test('generate throws with context on download error', async () => {
+    const https = require('https');
+    https.get.mockImplementationOnce((url, callback) => {
+      const mockResponse = {
+        pipe: jest.fn(),
+        on: jest.fn((event, handler) => {
+          if (event === 'error') {
+            handler(new Error('connection reset'));
+          }
+        }),
+      };
+      callback(mockResponse);
+      return { on: jest.fn() };
+    });
+
+    await expect(generate('test prompt', { outputId: 'err_download_1' })).rejects.toThrow(
+      'download failed'
+    );
+  });
 });

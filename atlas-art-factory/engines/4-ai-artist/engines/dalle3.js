@@ -9,6 +9,8 @@ const STORAGE_DIR = path.join(__dirname, '../../../storage/artworks');
 const DEFAULT_WIDTH = 1024;
 const DEFAULT_HEIGHT = 1024;
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 /**
  * Map width/height to a DALL-E 3 supported size string.
  * DALL-E 3 only supports: 1024x1024, 1792x1024, 1024x1792
@@ -60,8 +62,6 @@ async function generate(prompt, options = {}) {
   // Parse actual dimensions from the mapped size string
   const [mappedWidth, mappedHeight] = sizeStr.split('x').map(Number);
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
   let response;
   try {
     response = await openai.images.generate({
@@ -84,7 +84,11 @@ async function generate(prompt, options = {}) {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
   // Download image to local file
-  await _downloadImage(imageUrl, file_path);
+  try {
+    await _downloadImage(imageUrl, file_path);
+  } catch (err) {
+    throw new Error(`DALL-E 3 image download failed: ${err.message}`);
+  }
 
   return { id, file_path, engine: 'dalle3', width: mappedWidth, height: mappedHeight, prompt, url: imageUrl };
 }
