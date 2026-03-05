@@ -13,6 +13,9 @@ const inspirations = require('../../config/artist-inspirations.json');
  */
 const FALLBACK_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
 
+const TYPOGRAPHY_KEYWORDS = ['quote', 'text', 'typography', 'lettering', 'font', 'words', 'saying', 'phrase'];
+const PREMIUM_ENGINES = ['midjourney', 'dalle3'];
+
 /**
  * Select a color palette for an artist from their inspirationDNA color signatures.
  * Finds the primary inspiration (highest influence %), loads that artist's
@@ -80,6 +83,7 @@ function injectKeywords(template, vars) {
     color2: colors[1] || FALLBACK_COLORS[1],
     color3: colors[2] || FALLBACK_COLORS[2],
     color4: colors[3] || FALLBACK_COLORS[3],
+    // accent_color mirrors color1 — serves as a single accent in monochrome templates
     accent_color: colors[0] || FALLBACK_COLORS[0],
   };
 
@@ -110,9 +114,8 @@ function injectKeywords(template, vars) {
  */
 function hasTypography(prompt) {
   if (typeof prompt !== 'string') return false;
-  const typographyWords = ['quote', 'text', 'typography', 'lettering', 'font', 'words', 'saying', 'phrase'];
   const lower = prompt.toLowerCase();
-  return typographyWords.some((word) => lower.includes(word));
+  return TYPOGRAPHY_KEYWORDS.some((word) => lower.includes(word));
 }
 
 /**
@@ -125,7 +128,7 @@ function hasTypography(prompt) {
 function isPremium(artist) {
   if (!artist) return false;
   const engine = artist.preferred_engine || '';
-  return engine === 'midjourney' || engine === 'dalle3';
+  return PREMIUM_ENGINES.includes(engine);
 }
 
 /**

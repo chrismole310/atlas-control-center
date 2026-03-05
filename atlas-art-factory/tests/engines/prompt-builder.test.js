@@ -113,5 +113,20 @@ describe('Prompt Builder', () => {
       const artist = { preferred_engine: 'flux-schnell' };
       expect(isPremium(artist)).toBe(false);
     });
+
+    test('isPremium returns true for dalle3', () => {
+      const artist = { preferred_engine: 'dalle3' };
+      expect(isPremium(artist)).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildArtworkPrompt — edge cases
+  // ---------------------------------------------------------------------------
+  describe('buildArtworkPrompt edge cases', () => {
+    test('buildArtworkPrompt handles null silo gracefully', () => {
+      const result = buildArtworkPrompt(artist1, null);
+      expect(typeof result).toBe('string');
+    });
   });
 });
