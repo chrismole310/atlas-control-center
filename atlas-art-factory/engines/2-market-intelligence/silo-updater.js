@@ -27,13 +27,14 @@ function distributeSlots(siloScores, totalSlots, minSlots) {
 
   const count = siloScores.length;
 
-  // Step 1: Assign minSlots to every silo
+  // Step 1: Assign minSlots to every silo (clamp to prevent sum exceeding totalSlots)
+  const effectiveMin = count > 0 ? Math.min(minSlots, Math.floor(totalSlots / count)) : minSlots;
   for (const silo of siloScores) {
-    result.set(silo.id, minSlots);
+    result.set(silo.id, effectiveMin);
   }
 
   // Step 2: Remaining slots after minimum allocation
-  const remaining = totalSlots - count * minSlots;
+  const remaining = totalSlots - count * effectiveMin;
 
   if (remaining <= 0) {
     // Nothing more to distribute — already at or above totalSlots
@@ -161,7 +162,7 @@ async function updateSiloPriorities() {
   const results = [];
 
   for (const silo of silos) {
-    const newSlots = allocationMap.get(silo.id) || MIN_SLOTS_PER_SILO;
+    const newSlots = allocationMap.get(silo.id) ?? MIN_SLOTS_PER_SILO;
     const oldSlots = parseInt(silo.target_daily_output) || 0;
     const demandScore = demandMap.get(silo.id);
 
@@ -171,17 +172,16 @@ async function updateSiloPriorities() {
         SET target_daily_output = $1, updated_at = NOW()
         WHERE id = $2
       `, [newSlots, silo.id]);
+      results.push({
+        silo_id: silo.id,
+        silo_name: silo.name,
+        old_slots: oldSlots,
+        new_slots: newSlots,
+        demand_score: demandScore,
+      });
     } catch (err) {
       logger.error(`Failed to update silo ${silo.id}`, err);
     }
-
-    results.push({
-      silo_id: silo.id,
-      silo_name: silo.name,
-      old_slots: oldSlots,
-      new_slots: newSlots,
-      demand_score: demandScore,
-    });
   }
 
   // Step 7: Sort by new_slots DESC

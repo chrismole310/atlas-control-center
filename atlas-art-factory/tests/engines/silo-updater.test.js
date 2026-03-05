@@ -62,6 +62,46 @@ describe('distributeSlots', () => {
     const total = [...result.values()].reduce((s, v) => s + v, 0);
     expect(total).toBe(200);
   });
+
+  test('empty array returns empty Map', () => {
+    const result = distributeSlots([], 200, 1);
+    expect(result.size).toBe(0);
+  });
+
+  test('all-negative scores treated as equal-distribution (sum = 200, each >= 1)', () => {
+    const siloScores = [
+      { id: 1, score: -10 },
+      { id: 2, score: -50 },
+      { id: 3, score: -1 },
+    ];
+
+    const result = distributeSlots(siloScores, 200, 1);
+
+    // Sum must equal exactly 200
+    const total = [...result.values()].reduce((s, v) => s + v, 0);
+    expect(total).toBe(200);
+
+    // Each gets at least 1
+    for (const slots of result.values()) {
+      expect(slots).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  test('overflow case: count * minSlots > totalSlots — sum still equals totalSlots', () => {
+    // 201 silos with minSlots=1 and totalSlots=200 would overflow without Fix 1
+    const siloScores = Array.from({ length: 201 }, (_, i) => ({ id: i + 1, score: 10 }));
+
+    const result = distributeSlots(siloScores, 200, 1);
+
+    // Sum must still equal exactly 200
+    const total = [...result.values()].reduce((s, v) => s + v, 0);
+    expect(total).toBe(200);
+
+    // Each silo should have received at least 0 slots (effectiveMin floors to 0 here)
+    for (const slots of result.values()) {
+      expect(slots).toBeGreaterThanOrEqual(0);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -145,5 +185,25 @@ describe('updateSiloPriorities', () => {
     const results = await updateSiloPriorities();
     expect(results).toEqual([]);
     expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  test('getSiloDemandScore rejection falls back to DEFAULT_DEMAND_SCORE and still returns 1 result', async () => {
+    // 1st call: SELECT active silos — 1 silo
+    query.mockResolvedValueOnce({
+      rows: [{ id: 1, name: 'floral', target_daily_output: 5, priority: 60 }],
+    });
+
+    // getSiloDemandScore for silo 1 → rejects
+    query.mockRejectedValueOnce(new Error('DB connection lost'));
+
+    // UPDATE for silo 1 → succeeds
+    query.mockResolvedValueOnce({ rowCount: 1 });
+
+    const results = await updateSiloPriorities();
+
+    // Should not throw; returns 1 result using DEFAULT_DEMAND_SCORE=50
+    expect(results.length).toBe(1);
+    expect(results[0].demand_score).toBe(50);
+    expect(results[0].silo_name).toBe('floral');
   });
 });
