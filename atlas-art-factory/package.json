@@ -9,8 +9,7 @@
     "api": "node api/index.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "migrate": "node database/migrate.js",
-    "seed": "node database/seed.js"
+    "migrate": "node database/migrate.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -28,12 +27,11 @@
     "node-vibrant": "^3.1.6",
     "uuid": "^9.0.0",
     "dotenv": "^16.4.1",
-    "@anthropic-ai/sdk": "^0.78.0"
+    "@anthropic-ai/sdk": "^0.39.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.0.3",
-    "supertest": "^6.3.4"
+    "nodemon": "^3.0.3"
   },
   "jest": {
     "testEnvironment": "node",
