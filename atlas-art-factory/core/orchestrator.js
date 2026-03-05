@@ -10,6 +10,7 @@ const { createLogger } = require('./logger');
 const { runTrendScraper } = require('../engines/trend-scraper/index');
 const { runMarketIntelligence } = require('../engines/market-intel/index');
 const { runImageProduction } = require('../engines/image-production/index');
+const { runMockupGeneration } = require('../engines/mockup-generator/index');
 
 const logger = createLogger('orchestrator');
 
@@ -36,6 +37,14 @@ function registerProcessors() {
     logger.info('Processing image generation job', { jobId: job.id });
     const result = await runImageProduction();
     logger.info('Image generation job complete', result);
+    return result;
+  });
+
+  const mockupQueue = getQueue(QUEUE_NAMES.MOCKUP_GENERATION);
+  mockupQueue.process(async (job) => {
+    logger.info('Processing mockup generation job', { jobId: job.id });
+    const result = await runMockupGeneration();
+    logger.info('Mockup generation job complete', result);
     return result;
   });
 }
@@ -104,6 +113,16 @@ async function dispatchAnalytics() {
 }
 
 /**
+ * Dispatch the mockup generation job.
+ */
+async function dispatchMockupGeneration() {
+  const queue = getQueue(QUEUE_NAMES.MOCKUP_GENERATION);
+  const job = await queue.add({ task: 'generate-mockups', triggeredAt: new Date().toISOString() });
+  logger.info('Dispatched mockup generation job', { jobId: job.id });
+  return job;
+}
+
+/**
  * Run a full daily cycle (for manual trigger or testing).
  */
 async function runDailyCycle() {
@@ -112,6 +131,7 @@ async function runDailyCycle() {
     await dispatchScraping();
     await dispatchMarketIntelligence();
     await dispatchImageGeneration();
+    await dispatchMockupGeneration();
     await dispatchAnalytics();
     logger.info('Daily cycle complete');
     return { success: true };
@@ -127,5 +147,6 @@ module.exports = {
   dispatchMarketIntelligence,
   dispatchImageGeneration,
   dispatchAnalytics,
+  dispatchMockupGeneration,
   runDailyCycle,
 };
