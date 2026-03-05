@@ -3,6 +3,17 @@
 jest.mock('sharp');
 jest.mock('fs');
 
+// Mock the logger so we can assert on logger.error calls
+const mockLoggerError = jest.fn();
+jest.mock('../../core/logger', () => ({
+  createLogger: jest.fn(() => ({
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: mockLoggerError,
+  })),
+}));
+
 // Mock room-templates using the resolved path so it intercepts the require
 // inside art-placer.js (which uses require('./room-templates') at runtime)
 jest.mock('../../engines/5-mockup-generation/room-templates', () => ({
@@ -75,6 +86,13 @@ test('placeArtInRoom throws for unknown template', async () => {
   );
 });
 
+test('placeArtInRoom throws with context when Sharp fails', async () => {
+  sharp.mockImplementationOnce(() => { throw new Error('Bad input'); });
+  await expect(placeArtInRoom('/fake/artwork.png', 'living-room')).rejects.toThrow(
+    'Failed to place art'
+  );
+});
+
 test('generateAllMockups calls placeArtInRoom for each template', async () => {
   const results = await generateAllMockups('/fake/artwork.png', {
     outputPrefix: 'test_prefix',
@@ -110,4 +128,19 @@ test('generateAllMockups continues when one template fails', async () => {
   // Should still return results (4 out of 5 succeed)
   expect(Array.isArray(results)).toBe(true);
   expect(results.length).toBe(4);
+});
+
+test('generateAllMockups calls logger.error when a template fails', async () => {
+  let callCount = 0;
+  mockSharpInstance.toFile.mockImplementation(() => {
+    callCount++;
+    if (callCount === 1) return Promise.reject(new Error('disk error'));
+    return Promise.resolve({ size: 1000 });
+  });
+
+  await generateAllMockups('/fake/artwork.png');
+  expect(mockLoggerError).toHaveBeenCalledWith(
+    expect.stringContaining('Mockup failed for template'),
+    expect.objectContaining({ error: expect.any(String) })
+  );
 });

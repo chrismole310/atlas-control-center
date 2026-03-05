@@ -1,4 +1,5 @@
 'use strict';
+const { createCanvas } = require('canvas');
 
 // Room template definitions
 const ROOM_TEMPLATES = [
@@ -91,7 +92,6 @@ function getTemplate(id) { return ROOM_TEMPLATES.find(t => t.id === id) || null;
  * @returns {Buffer} PNG buffer
  */
 function generateRoomScene(templateId) {
-  const { createCanvas } = require('canvas');
   const template = getTemplate(templateId);
   if (!template) throw new Error(`Unknown room template: ${templateId}`);
 
@@ -123,4 +123,4 @@ function generateRoomScene(templateId) {
   return canvas.toBuffer('image/png');
 }
 
-module.exports = { getTemplates, getTemplate, generateRoomScene, ROOM_TEMPLATES };
+module.exports = { getTemplates, getTemplate, generateRoomScene };
