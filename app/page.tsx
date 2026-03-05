@@ -166,7 +166,7 @@ export default function Dashboard() {
       description: "AI art empire — 200 artworks/day",
       icon: Palette,
       gradient: "from-indigo-500 to-violet-600",
-      status: "building",
+      status: "active",
       revenue: "50 silos",
       badge: { label: "NEW", color: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" },
       meta: "50 silos · 50 artists · 6 platforms",
