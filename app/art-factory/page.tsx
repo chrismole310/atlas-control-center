@@ -5,6 +5,7 @@ import Link from 'next/link'
 import ProductionTab from './components/ProductionTab'
 import TrendsTab from './components/TrendsTab'
 import AnalyticsTab from './components/AnalyticsTab'
+import PipelineTab from './components/PipelineTab'
 
 const API_BASE = 'http://localhost:3001'
 
@@ -40,11 +41,12 @@ interface ApiHealth {
   ts: string
 }
 
-type TabId = 'overview' | 'production' | 'silos' | 'artists' | 'trends' | 'analytics' | 'settings'
+type TabId = 'overview' | 'production' | 'pipeline' | 'silos' | 'artists' | 'trends' | 'analytics' | 'settings'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'production', label: 'Production' },
+  { id: 'pipeline', label: '⚡ Pipeline' },
   { id: 'silos', label: 'Silos' },
   { id: 'artists', label: 'Artists' },
   { id: 'trends', label: 'Trends' },
@@ -148,6 +150,8 @@ export default function ArtFactoryPage() {
             <p className="text-sm mt-1 text-red-400">Make sure the Art Factory API is running on port 3001.</p>
           </div>
         )}
+
+        {activeTab === 'pipeline' && <PipelineTab />}
 
         {!loading && !error && (
           <>
