@@ -138,7 +138,7 @@ export default function ArtFactoryPage() {
 
       {/* Content */}
       <div className="p-6">
-        {loading && (
+        {loading && activeTab !== 'pipeline' && (
           <div className="flex items-center justify-center h-64 text-gray-400">
             Loading...
           </div>
