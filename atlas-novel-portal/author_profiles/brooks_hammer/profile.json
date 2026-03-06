@@ -1,0 +1,26 @@
+{
+  "author_id": "brooks_hammer",
+  "pen_name": "Brooks Hammer",
+  "genre": "military_thriller",
+  "status": "active",
+  "series_name": "Brooks Hammer Series",
+  "total_books_planned": 20,
+  "target_words_per_book": 100000,
+  "target_chapters_per_book": 30,
+  "target_words_per_chapter": [3300, 3500],
+  "chapter_types": ["ACTION", "CHARACTER", "VILLAIN_POV", "TECHNICAL", "PERSONAL_STAKES"],
+  "series_bible_path": "author_profiles/brooks_hammer/series_bible.md",
+  "voice_guide_path": "author_profiles/brooks_hammer/voice_guide.md",
+  "chapter_formula_path": "author_profiles/brooks_hammer/chapter_formula.md",
+  "reading_order_path": "author_profiles/brooks_hammer/series_reading_order.md",
+  "outlines_path": "author_profiles/brooks_hammer/book_outlines/",
+  "publishing_imprint": "Molehole Inc.",
+  "distribution_platforms": ["kindle", "apple_books", "kobo", "audible"],
+  "style_rules": {
+    "forbidden": ["exclamation_marks", "purple_prose", "exposition_dumps", "adverb_heavy_dialogue_tags", "comic_relief"],
+    "required": ["sentence_fragments", "sensory_detail", "military_cadence", "short_paragraphs", "military_terse_dialogue"],
+    "metaphor_pattern": "machines_as_human_humans_as_machine",
+    "chapter_opening_structure": ["PLACE", "TIME", "ATMOSPHERE", "CHARACTER"],
+    "recurring_motifs": ["hand_tremor_unique_per_character", "analog_vs_digital_tension", "call_back_to_service", "ticking_clock", "machines_as_human_humans_as_machine"]
+  }
+}
