@@ -39,6 +39,10 @@ function readTitle(folderId) {
   return folderId;
 }
 
+// NOTE: scanLibrary and readTitle use synchronous fs calls intentionally. The
+// library scan runs at most once per API request on a single-user local server
+// where blocking the event loop briefly is an acceptable tradeoff over the
+// complexity of async directory walking.
 /** Scan library and return parsed entries, skipping anything that doesn't match */
 function scanLibrary() {
   if (!fs.existsSync(LIBRARY_ROOT)) return [];
@@ -123,7 +127,12 @@ router.get('/:silo/:folderId/artwork', (req, res) => {
     if (err) return res.status(404).json({ error: 'Artwork not found' });
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=86400');
-    fs.createReadStream(artworkPath).pipe(res);
+    const stream = fs.createReadStream(artworkPath);
+    stream.on('error', () => {
+      if (!res.headersSent) res.status(500).json({ error: 'Read error' });
+      else res.destroy();
+    });
+    stream.pipe(res);
   });
 });
 
@@ -153,13 +162,23 @@ router.get('/:silo/:folderId/mockup/:room', (req, res) => {
   if (!mockupPath) return res.status(403).json({ error: 'Forbidden' });
   res.setHeader('Content-Type', 'image/png');
   res.setHeader('Cache-Control', 'public, max-age=86400');
-  fs.createReadStream(mockupPath).pipe(res);
+  const stream = fs.createReadStream(mockupPath);
+  stream.on('error', () => {
+    if (!res.headersSent) res.status(500).json({ error: 'Read error' });
+    else res.destroy();
+  });
+  stream.pipe(res);
 });
 
 // ── GET /api/library/:silo/:folderId/listing ──────────────────────────────────
 
 router.get('/:silo/:folderId/listing', (req, res) => {
-  const { folderId } = req.params;
+  const { silo, folderId } = req.params;
+
+  const parsed = parseFolder(folderId);
+  if (!parsed || parsed.slug !== silo) {
+    return res.status(400).json({ error: 'Silo mismatch' });
+  }
 
   const listingPath = safePath(folderId, 'listing.txt');
   if (!listingPath) return res.status(403).json({ error: 'Forbidden' });
