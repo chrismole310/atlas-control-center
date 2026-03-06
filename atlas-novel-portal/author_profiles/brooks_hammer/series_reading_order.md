@@ -66,6 +66,6 @@
 - **Total books:** 20
 - **Existing drafts:** 11
 - **Needs drafting:** 9
-- **Total existing words:** 425,508
-- **Words needed to complete series:** ~1,574,492
+- **Total existing words:** 397,284
+- **Words needed to complete series:** ~1,602,716
 - **Target total word count:** 2,000,000

@@ -81,5 +81,5 @@ Every protagonist has a moment — one per book — where they revisit why they 
 ### The Ticking Clock
 Every book has an external countdown. Always specific. "72 hours." "Before the satellite window closes." "Before the next launch cycle." The protagonist knows the time. The reader knows the time. Pressure is structural.
 
-### The Final 200 Words
-Every chapter ends with movement, not reflection. A door opening. A call coming in. A decision made. The reader must turn the page. The protagonist is always in motion at the end of a chapter — physically or psychologically.
+### The Machines-as-Human / Humans-as-Machine Motif
+The aircraft *breathed*. Vance's mind processed threat assessments in parallel threads. This pattern recurs throughout. See the metaphor_pattern rule in the style guide. Surface it at the right moment — when it lands, it reframes both the machine and the character simultaneously.

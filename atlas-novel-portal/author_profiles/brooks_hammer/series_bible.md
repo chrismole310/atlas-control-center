@@ -29,13 +29,24 @@ DARPA researcher turned field operative. Designed three of the weapons systems t
 ### Evan Rourke
 Coast Guard rescue swimmer turned Joint Special Operations. The only protagonist who chose service for non-military reasons — he wanted to save lives, ended up in a world that takes them. Hand tremor: none — his tells are silence and over-preparation. Appears in: Gravity's Edge (Book 12).
 
+### Commander Sarah Chen
+Surface warfare officer, US Navy. Commands the Atlantic theater crisis response in Dead Reckoning (Book 8). Technically precise, politically aware — the only protagonist who came up through the system and still believes in it. Hand tremor: right hand, noticeable only when she's writing, never on the bridge. Appears in: Dead Reckoning (Book 8).
+
+### Dr. Marcus Reid
+DARPA astrophysicist embedded with deep space communications infrastructure. Drafted into the events of Signal Loss (Book 10) when the system he designed stops working in ways the physics shouldn't allow. Thinks in orbital mechanics and signal delay. Hand tremor: none — stillness is professional habit, precision work requires it. Appears in: Signal Loss (Book 10).
+
+### Colonel Marcus Webb
+Air Force Space Command, satellite systems and orbital operations. The transition character between the terrestrial series and the space arc. Methodical, institutional, quietly furious at the pace of political decision-making. Hand tremor: left hand, stress-induced — appears during briefings, never during operations. Appears in: Skyfall (Book 13).
+
 ---
 
-## General Jim Vance
+## Recurring Characters
+
+### General Jim Vance
 
 **CRITICAL RULE: This character is ALWAYS referred to as "Jim Vance" or "General Vance" or "the General." NEVER any other first name. Never "James." Never "James Vance." Always "Jim."**
 
-Four-star general, Chairman of the Joint Chiefs by Book 8. Appears in every book — sometimes briefly, sometimes as a central figure. The constant thread across all 20 books. Vance is not a villain and not a saint. He makes decisions at scale. He carries them without flinching because flinching costs lives. His relationship with each protagonist is different — mentor, adversary, last resort, conscience. Age: 61 in Book 1 (2026), 79 in Book 20 (2043).
+Four-star general, Chairman of the Joint Chiefs by Book 8. Appears in every book — sometimes briefly, sometimes as a central figure. The constant thread across all 20 books. Vance is not a villain and not a saint. He makes decisions at scale. He carries them without flinching because flinching costs lives. His relationship with each protagonist is different — mentor, adversary, last resort, conscience. Age: 61 in Book 1 (2026), 78 in Book 20 (2043).
 
 ---
 
