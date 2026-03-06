@@ -14,7 +14,10 @@ const { createLogger } = require('../core/logger');
 
 const logger = createLogger('generate-pipeline');
 
+// Primary library on external drive; fall back to Desktop if drive not mounted
+const EXTERNAL_LIBRARY = '/Volumes/Atlas_2TB/ArtFactory/library';
 const DESKTOP_OUTPUT = path.join(os.homedir(), 'Desktop', 'art-factory-output');
+const LIBRARY_ROOT = fs.existsSync('/Volumes/Atlas_2TB') ? EXTERNAL_LIBRARY : DESKTOP_OUTPUT;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,7 +127,7 @@ function copyZipToOutput(folderPath, zipPath) {
 async function runPipeline(silo, onProgress) {
   const outputId = `gen_${Date.now()}`;
   const folderName = `${datestamp()}-${slugify(silo.name)}-${outputId.slice(-6)}`;
-  const folderPath = path.join(DESKTOP_OUTPUT, folderName);
+  const folderPath = path.join(LIBRARY_ROOT, folderName);
   fs.mkdirSync(folderPath, { recursive: true });
 
   const progress = (step, status, message) => {
@@ -220,4 +223,4 @@ function openFolder(folderPath) {
   });
 }
 
-module.exports = { runPipeline, openFolder, DESKTOP_OUTPUT };
+module.exports = { runPipeline, openFolder, LIBRARY_ROOT, DESKTOP_OUTPUT };

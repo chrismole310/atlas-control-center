@@ -5,11 +5,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { query } = require('../../core/database');
-const { runPipeline, openFolder, DESKTOP_OUTPUT } = require('../generate-pipeline');
+const { runPipeline, openFolder, LIBRARY_ROOT } = require('../generate-pipeline');
 const { createLogger } = require('../../core/logger');
 
 // Artwork files must live under this directory (defence-in-depth boundary)
-const ARTWORK_ROOT = path.resolve(DESKTOP_OUTPUT);
+const ARTWORK_ROOT = path.resolve(LIBRARY_ROOT);
 
 const router = express.Router();
 const logger = createLogger('api:generate');
