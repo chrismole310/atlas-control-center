@@ -2,10 +2,14 @@
 
 const express = require('express');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { query } = require('../../core/database');
-const { runPipeline, openFolder } = require('../generate-pipeline');
+const { runPipeline, openFolder, DESKTOP_OUTPUT } = require('../generate-pipeline');
 const { createLogger } = require('../../core/logger');
+
+// Artwork files must live under this directory (defence-in-depth boundary)
+const ARTWORK_ROOT = path.resolve(DESKTOP_OUTPUT);
 
 const router = express.Router();
 const logger = createLogger('api:generate');
@@ -116,12 +120,19 @@ router.get('/:jobId/artwork', (req, res) => {
   if (!job) return res.status(404).json({ error: 'Job not found' });
   if (!job.result?.artworkPath) return res.status(400).json({ error: 'Artwork not ready' });
 
-  const artworkPath = job.result.artworkPath;
-  if (!fs.existsSync(artworkPath)) return res.status(404).json({ error: 'Artwork file not found' });
+  const artworkPath = path.resolve(job.result.artworkPath);
 
-  res.setHeader('Content-Type', 'image/png');
-  res.setHeader('Cache-Control', 'public, max-age=3600');
-  fs.createReadStream(artworkPath).pipe(res);
+  // Ensure the resolved path stays within the expected output directory
+  if (!artworkPath.startsWith(ARTWORK_ROOT + path.sep)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  fs.access(artworkPath, fs.constants.R_OK, (err) => {
+    if (err) return res.status(404).json({ error: 'Artwork file not found' });
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    fs.createReadStream(artworkPath).pipe(res);
+  });
 });
 
 // ── POST /api/generate/:jobId/open-folder ─────────────────────────────────────
