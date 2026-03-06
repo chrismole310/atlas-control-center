@@ -31,3 +31,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Art Factory pipeline wire pulse animation */
+@keyframes wirePulse {
+  0%   { transform: translateX(0px);  opacity: 1; }
+  80%  { transform: translateX(44px); opacity: 0.8; }
+  100% { transform: translateX(48px); opacity: 0; }
+}
