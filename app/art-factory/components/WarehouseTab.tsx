@@ -269,6 +269,12 @@ function ArtworkThumb({
 
 // ── View 1: Silo Grid ──────────────────────────────────────────────────────
 
+const ZOOM_LEVELS = [
+  { cols: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', icon: '▪▪▪', label: 'Small' },
+  { cols: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4', icon: '▪▪',  label: 'Medium' },
+  { cols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2', icon: '▪',   label: 'Large' },
+]
+
 function SiloGrid({
   silos,
   librarySilos,
@@ -278,15 +284,34 @@ function SiloGrid({
   librarySilos: Map<string, LibrarySiloMeta>
   onSelectSilo: (silo: Silo) => void
 }) {
+  const [zoom, setZoom] = useState(1) // default: medium
   const sorted = [...silos].sort((a, b) => b.priority - a.priority)
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Warehouse Gallery</h2>
-        <span className="text-sm text-gray-400">{silos.length} silos</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-400">{silos.length} silos</span>
+          <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1">
+            {ZOOM_LEVELS.map((level, i) => (
+              <button
+                key={i}
+                onClick={() => setZoom(i)}
+                title={level.label}
+                className={`px-2 py-1 rounded text-xs font-mono transition-colors ${
+                  zoom === i
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {level.icon}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className={`grid ${ZOOM_LEVELS[zoom].cols} gap-3`}>
         {sorted.map(silo => {
           const slug = toSlug(silo.name)
           const meta = librarySilos.get(slug)
