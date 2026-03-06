@@ -12,7 +12,7 @@ export interface Book {
   wave: number
 }
 
-interface AuthorProfile {
+export interface AuthorProfile {
   author_id: string
   pen_name: string
   genre: string
@@ -81,7 +81,7 @@ function parseReadingOrderMarkdown(md: string): Book[] {
           leadCharacter,
           status: rawStatus,
           wordCount,
-          targetWords: 100000,
+          targetWords: profile.target_words_per_book,
           wave,
         })
       }
@@ -103,6 +103,9 @@ export async function GET() {
     )
     const activeAuthor: ActiveAuthor = JSON.parse(activeAuthorRaw)
     const authorId = activeAuthor.active_author_id
+    if (!/^[\w-]+$/.test(authorId)) {
+      return NextResponse.json({ error: 'Invalid author ID' }, { status: 500 })
+    }
 
     // Read author profile
     const profileRaw = readFileSync(

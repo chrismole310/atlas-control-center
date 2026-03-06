@@ -2,32 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import type { Book, AuthorProfile } from '../api/novel-portal/data/route'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type BookStatus = 'EXISTING DRAFT' | 'NEEDS DRAFTING' | 'IN PROGRESS' | 'COMPLETE'
-
-interface Book {
-  number: number
-  title: string
-  leadCharacter: string
-  status: BookStatus
-  wordCount: number
-  targetWords: number
-  wave: number
-}
-
-interface AuthorProfile {
-  author_id: string
-  pen_name: string
-  genre: string
-  status: string
-  series_name: string
-  total_books_planned: number
-  target_words_per_book: number
-  publishing_imprint: string
-  distribution_platforms: string[]
-}
+type BookStatus = Book['status']
 
 interface Stats {
   totalBooks: number
