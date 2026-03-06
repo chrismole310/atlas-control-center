@@ -358,7 +358,7 @@ export default function PipelineTab() {
         {/* End section */}
         {mode === 'simulation' && <SimEndButtons visible={allDone} />}
         {jobDone && jobStatus?.result && (
-          <ResultCard result={jobStatus.result} onOpenFolder={openFolder} />
+          <ResultCard jobId={jobStatus.jobId} result={jobStatus.result} onOpenFolder={openFolder} />
         )}
         {jobError && (
           <div className="mt-8 text-center text-red-400 text-sm">
@@ -487,7 +487,7 @@ function SimEndButtons({ visible }: { visible: boolean }) {
 
 // ── ResultCard ────────────────────────────────────────────────────────────
 
-function ResultCard({ result, onOpenFolder }: { result: NonNullable<JobStatus['result']>; onOpenFolder: () => void }) {
+function ResultCard({ jobId, result, onOpenFolder }: { jobId: string; result: NonNullable<JobStatus['result']>; onOpenFolder: () => void }) {
   const [copied, setCopied] = useState(false)
 
   const listingText = [
@@ -527,6 +527,17 @@ function ResultCard({ result, onOpenFolder }: { result: NonNullable<JobStatus['r
       </div>
 
       <p className="text-xs text-gray-400 mb-4 font-mono truncate">{result.folderPath}</p>
+
+      {/* Artwork preview */}
+      <div className="mb-4 flex justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`${API_BASE}/api/generate/${jobId}/artwork`}
+          alt="Generated artwork preview"
+          className="max-w-xs rounded-lg border border-gray-700 object-cover"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+        />
+      </div>
 
       <div className="text-xs text-indigo-300 font-semibold mb-2 uppercase tracking-wide">
         Etsy Listing Copy
