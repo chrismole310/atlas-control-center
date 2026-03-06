@@ -7,12 +7,17 @@ const cors = require('cors');
 const { query, closePool } = require('../core/database');
 const { createLogger } = require('../core/logger');
 const { detectTrendAlerts } = require('../engines/2-market-intelligence/trend-alerts');
+const generateRouter = require('./routes/generate');
 
 const logger = createLogger('api');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// ─── Generate & Save ──────────────────────────────────────────────────────────
+
+app.use('/api/generate', generateRouter);
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
