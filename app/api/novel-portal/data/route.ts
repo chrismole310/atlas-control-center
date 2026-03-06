@@ -29,7 +29,7 @@ interface ActiveAuthor {
   switched_at: string
 }
 
-function parseReadingOrderMarkdown(md: string): Book[] {
+function parseReadingOrderMarkdown(md: string, targetWords: number): Book[] {
   const books: Book[] = []
 
   // Find the table lines — skip the header and separator rows
@@ -81,7 +81,7 @@ function parseReadingOrderMarkdown(md: string): Book[] {
           leadCharacter,
           status: rawStatus,
           wordCount,
-          targetWords: profile.target_words_per_book,
+          targetWords,
           wave,
         })
       }
@@ -120,7 +120,7 @@ export async function GET() {
       'utf-8'
     )
 
-    const books = parseReadingOrderMarkdown(readingOrderMd)
+    const books = parseReadingOrderMarkdown(readingOrderMd, profile.target_words_per_book)
 
     // Compute stats
     const totalWords = books.reduce((sum, b) => sum + b.wordCount, 0)
