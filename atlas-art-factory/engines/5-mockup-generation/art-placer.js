@@ -30,7 +30,12 @@ async function placeArtInRoom(artworkPath, templateId, options = {}) {
   const outputId = options.outputId || `mockup_${templateId}_${Date.now()}`;
   const outputPath = path.join(MOCKUPS_DIR, `${outputId}.png`);
 
-  if (process.env.REPLICATE_API_TOKEN) {
+  // Cloudflare Workers AI has no Kontext model — use Sharp compositing (fast, free)
+  // Replicate or HuggingFace tokens enable AI-native Kontext room scenes
+  const useKontext = !process.env.CLOUDFLARE_AI_TOKEN &&
+    (process.env.REPLICATE_API_TOKEN || process.env.HUGGINGFACE_API_TOKEN);
+
+  if (useKontext) {
     return _kontextMockup(artworkPath, templateId, outputPath);
   }
   return _compositeMockup(artworkPath, templateId, outputPath);

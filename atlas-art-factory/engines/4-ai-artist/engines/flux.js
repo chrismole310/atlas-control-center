@@ -1,105 +1,96 @@
 'use strict';
 
-const Replicate = require('replicate');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
 
 const STORAGE_DIR = path.join(__dirname, '../../../storage/artworks');
-const FLUX_SCHNELL_MODEL = 'black-forest-labs/flux-schnell';
-const FLUX_DEV_MODEL = 'black-forest-labs/flux-dev';
-const DEFAULT_ASPECT_RATIO = '2:3';   // portrait — standard for print art
-const DEFAULT_MEGAPIXELS = '1';        // ~1MP output, fast + cheap
+
+// Cloudflare Workers AI — FLUX.1-schnell (free, 10k req/day)
+const CF_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+
+// Portrait 2:3 ratio at ~1MP — standard for print art
+const DEFAULT_WIDTH  = 768;
+const DEFAULT_HEIGHT = 1024;
 
 /**
- * Download an image from a URL to a local file path.
- * @param {string} url
- * @param {string} dest
- * @returns {Promise<void>}
+ * Generate image via Cloudflare Workers AI.
+ * Returns a Buffer of the PNG image.
  */
-async function _downloadImage(url, dest) {
+async function _cfGenerate(prompt, width, height) {
+  const token     = process.env.CLOUDFLARE_AI_TOKEN;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  if (!token || !accountId) throw new Error('CLOUDFLARE_AI_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set');
+
+  const body = JSON.stringify({ prompt, width, height, num_steps: 4 });
+
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    const request = https.get(url, (response) => {
-      response.pipe(file);
-      response.on('end', () => {
-        file.on('finish', resolve);
-        file.on('error', reject);
-      });
-      response.on('error', reject);
-    });
-    request.on('error', (err) => {
-      reject(err);
-    });
+    const chunks = [];
+    const req = https.request(
+      {
+        hostname: 'api.cloudflare.com',
+        path: `/client/v4/accounts/${accountId}/ai/run/${CF_MODEL}`,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          let data;
+          try { data = JSON.parse(text); } catch {
+            return reject(new Error(`CF non-JSON response: ${text.slice(0, 200)}`));
+          }
+          if (!data.success) {
+            const msg = data.errors?.[0]?.message || JSON.stringify(data.errors);
+            return reject(new Error(`Cloudflare Workers AI error: ${msg}`));
+          }
+          const b64 = data.result?.image;
+          if (!b64) return reject(new Error('No image in Cloudflare response'));
+          resolve(Buffer.from(b64, 'base64'));
+        });
+        res.on('error', reject);
+      }
+    );
+    req.on('error', reject);
+    req.write(body);
+    req.end();
   });
 }
 
 /**
- * Internal helper: run a FLUX model via Replicate, download the output image.
- * @param {string} model  - Replicate model identifier (owner/name)
- * @param {string} prompt
- * @param {Object} options - { width, height, outputId }
- * @returns {Promise<{id, file_path, engine, width, height, prompt, url}>}
+ * Internal helper: generate and save to disk.
  */
-async function _generate(model, prompt, options) {
-  const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+async function _generate(prompt, options = {}) {
+  const width  = options.width  || DEFAULT_WIDTH;
+  const height = options.height || DEFAULT_HEIGHT;
 
-  // FLUX schnell/dev use aspect_ratio + megapixels, not width/height
-  const aspectRatio = options.aspectRatio || DEFAULT_ASPECT_RATIO;
-  const megapixels = options.megapixels || DEFAULT_MEGAPIXELS;
-
-  let output;
+  let imageBuffer;
   try {
-    output = await replicate.run(model, {
-      input: {
-        prompt,
-        aspect_ratio: aspectRatio,
-        megapixels: megapixels,
-        num_outputs: 1,
-        output_format: 'png',
-        output_quality: 100,
-      },
-    });
+    imageBuffer = await _cfGenerate(prompt, width, height);
   } catch (err) {
-    throw new Error(`FLUX generation failed for model "${model}": ${err.message}`);
+    throw new Error(`FLUX generation failed: ${err.message}`);
   }
 
-  // Replicate SDK returns URL objects; extract the href string
-  const rawOutput = Array.isArray(output) ? output[0] : output;
-  const imageUrl = rawOutput instanceof URL ? rawOutput.href : String(rawOutput);
-
   const id = options.outputId || `flux_${Date.now()}`;
-  const file_path = path.join(STORAGE_DIR, `${id}.png`);
-
-  // Ensure storage directory exists
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
+  const file_path = path.join(STORAGE_DIR, `${id}.png`);
+  fs.writeFileSync(file_path, imageBuffer);
 
-  // Download image to local file
-  await _downloadImage(imageUrl, file_path);
-
-  const engine = model.split('/')[1] || model;
-
-  return { id, file_path, engine, aspectRatio, prompt, url: imageUrl };
+  return { id, file_path, engine: 'cf-flux-schnell', width, height, prompt };
 }
 
-/**
- * Generate image using FLUX.1 schnell (fast, free via Replicate).
- * @param {string} prompt
- * @param {Object} options - { width, height, outputId }
- * @returns {Promise<{id, file_path, engine, width, height, prompt, url}>}
- */
 async function generateFluxSchnell(prompt, options = {}) {
-  return _generate(FLUX_SCHNELL_MODEL, prompt, options);
+  return _generate(prompt, options);
 }
 
-/**
- * Generate image using FLUX.1 dev (quality, free via Replicate).
- * @param {string} prompt
- * @param {Object} options - { width, height, outputId }
- * @returns {Promise<{id, file_path, engine, width, height, prompt, url}>}
- */
 async function generateFluxDev(prompt, options = {}) {
-  return _generate(FLUX_DEV_MODEL, prompt, options);
+  // CF only has schnell — dev-quality is achieved via more descriptive prompts
+  return _generate(prompt, options);
 }
 
 module.exports = { generateFluxSchnell, generateFluxDev };
