@@ -21,7 +21,7 @@ Defense Intelligence Agency, former British SAS, naturalized American. Master of
 NSA cyber warfare specialist, Nigerian-American. Sees the world in patterns and vulnerabilities. Physically unassuming, psychologically formidable. Has a habit of speaking to machines like they're people before she breaks them. Hand tremor: none — hands are always occupied (typing, tools). Appears in: Kinetic Kill (Book 11).
 
 ### Ethan Vale
-Navy submariner, now classified deep-cover operative. Spent 18 months under the Pacific in a previous op — reshaped his relationship with silence, depth, and time. Never startled. Never hurries. Appears in: Ghost Fleet (Book 7).
+Navy submariner, now classified deep-cover operative. Spent 18 months under the Pacific in a previous op — reshaped his relationship with silence, depth, and time. Never startled. Never hurries. Hand tremor: none — stillness is total, learned in the deep. The water taught him to hold everything still. Appears in: Ghost Fleet (Book 7).
 
 ### Elias Thorne
 DARPA researcher turned field operative. Designed three of the weapons systems that appear in the series. Resents that he built tools for people who don't understand them. Hand tremor: both hands, caffeine and guilt — he knows exactly what his inventions have done. Appears in: Drone Winter (Book 6).
