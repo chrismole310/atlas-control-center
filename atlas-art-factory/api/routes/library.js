@@ -97,6 +97,7 @@ router.get('/:silo', (req, res) => {
       .sort((a, b) => b.date.localeCompare(a.date))
       .map(p => ({ folderId: p.folderId, date: p.date, title: readTitle(p.folderId) }));
 
+    // Empty pieces is valid — silo exists in DB but has no generated art yet
     res.json({ silo, pieces });
   } catch (err) {
     logger.error('GET /api/library/:silo failed', { error: err.message });
@@ -148,7 +149,8 @@ router.get('/:silo/:folderId/mockup/:room', (req, res) => {
   const files = fs.readdirSync(mockupsDir).filter(f => f.endsWith(`_${room}.png`));
   if (!files.length) return res.status(404).json({ error: 'Mockup not found' });
 
-  const mockupPath = path.join(mockupsDir, files[0]);
+  const mockupPath = safePath(folderId, 'mockups', files[0]);
+  if (!mockupPath) return res.status(403).json({ error: 'Forbidden' });
   res.setHeader('Content-Type', 'image/png');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   fs.createReadStream(mockupPath).pipe(res);
