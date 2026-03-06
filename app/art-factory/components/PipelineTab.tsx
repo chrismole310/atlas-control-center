@@ -77,6 +77,7 @@ function usePipelineSimulation() {
   const [states, setStates] = useState<NodeState[]>(STEPS.map(() => 'idle'))
   const [activeLineIndex, setActiveLineIndex] = useState<number[]>(STEPS.map(() => 0))
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const reset = useCallback(() => {
     setStates(STEPS.map(() => 'idle'))
@@ -102,7 +103,8 @@ function usePipelineSimulation() {
 
     // Cycle through activeLines every 900ms
     const step = STEPS[stepIndex]
-    const lineInterval = setInterval(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
       setActiveLineIndex(prev => {
         const next = [...prev]
         next[stepIndex] = (next[stepIndex] + 1) % step.activeLines.length
@@ -112,7 +114,10 @@ function usePipelineSimulation() {
 
     // After durationMs, mark done and advance
     timerRef.current = setTimeout(() => {
-      clearInterval(lineInterval)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
       setStates(prev => {
         const next = [...prev]
         next[stepIndex] = 'done'
@@ -126,6 +131,7 @@ function usePipelineSimulation() {
     timerRef.current = setTimeout(() => runStep(0), 800)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [runStep])
 
@@ -205,7 +211,7 @@ function PipelineNode({
       {/* Pulsing ring when active */}
       {isActive && (
         <motion.div
-          className="absolute inset-0 rounded-xl border-2 border-indigo-500"
+          className="absolute inset-0 rounded-xl border-2 border-indigo-500 pointer-events-none"
           animate={{ opacity: [0.6, 0, 0.6], scale: [1, 1.08, 1] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         />
