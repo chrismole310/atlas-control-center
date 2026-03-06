@@ -119,6 +119,7 @@ function useSilos() {
 function useGenerateJob() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null)
+  const [isPending, setIsPending] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const stopPolling = useCallback(() => {
@@ -131,33 +132,38 @@ function useGenerateJob() {
   const startJob = useCallback(async (siloId: number) => {
     stopPolling()
     setJobStatus(null)
+    setIsPending(true)
 
-    const res = await fetch(`${API_BASE}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ siloId }),
-    })
+    try {
+      const res = await fetch(`${API_BASE}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siloId }),
+      })
 
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || 'Failed to start job')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to start job')
+      }
+
+      const { jobId: newJobId } = await res.json()
+      setJobId(newJobId)
+
+      // Poll every 2 seconds
+      pollRef.current = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${API_BASE}/api/generate/${newJobId}/status`)
+          const status: JobStatus = await statusRes.json()
+          setJobStatus(status)
+
+          if (status.status === 'done' || status.status === 'error') {
+            stopPolling()
+          }
+        } catch {/* network hiccup — keep polling */}
+      }, 2000)
+    } finally {
+      setIsPending(false)
     }
-
-    const { jobId: newJobId } = await res.json()
-    setJobId(newJobId)
-
-    // Poll every 2 seconds
-    pollRef.current = setInterval(async () => {
-      try {
-        const statusRes = await fetch(`${API_BASE}/api/generate/${newJobId}/status`)
-        const status: JobStatus = await statusRes.json()
-        setJobStatus(status)
-
-        if (status.status === 'done' || status.status === 'error') {
-          stopPolling()
-        }
-      } catch {/* network hiccup — keep polling */}
-    }, 2000)
   }, [stopPolling])
 
   const openFolder = useCallback(async () => {
@@ -169,11 +175,13 @@ function useGenerateJob() {
     stopPolling()
     setJobId(null)
     setJobStatus(null)
+    setIsPending(false)
   }, [stopPolling])
 
   useEffect(() => () => stopPolling(), [stopPolling])
 
-  return { jobStatus, startJob, openFolder, reset, isRunning: !!jobId && jobStatus?.status !== 'done' && jobStatus?.status !== 'error' }
+  // isRunning covers both: the fetch-in-flight window (isPending) and active polling
+  return { jobStatus, startJob, openFolder, reset, isRunning: isPending || (!!jobId && jobStatus?.status !== 'done' && jobStatus?.status !== 'error') }
 }
 
 // ── usePipelineSimulation hook ────────────────────────────────────────────
@@ -189,40 +197,51 @@ function usePipelineSimulation(active: boolean) {
     setActiveLineIndex(STEPS.map(() => 0))
   }, [])
 
-  const runStep = useCallback((stepIndex: number) => {
-    if (stepIndex >= STEPS.length) {
-      timerRef.current = setTimeout(() => {
-        reset()
-        timerRef.current = setTimeout(() => runStep(0), 500)
-      }, RESTART_DELAY_MS)
-      return
-    }
-
-    setStates(prev => { const n = [...prev]; n[stepIndex] = 'active'; return n })
-
-    const step = STEPS[stepIndex]
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    intervalRef.current = setInterval(() => {
-      setActiveLineIndex(prev => {
-        const n = [...prev]; n[stepIndex] = (n[stepIndex] + 1) % step.activeLines.length; return n
-      })
-    }, 900)
-
-    timerRef.current = setTimeout(() => {
-      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
-      setStates(prev => { const n = [...prev]; n[stepIndex] = 'done'; return n })
-      timerRef.current = setTimeout(() => runStep(stepIndex + 1), 400)
-    }, step.durationMs)
-  }, [reset])
-
   useEffect(() => {
     if (!active) return
+
+    // `cancelled` flag prevents stale callbacks from mutating state after cleanup
+    let cancelled = false
+
+    function runStep(stepIndex: number) {
+      if (cancelled) return
+
+      if (stepIndex >= STEPS.length) {
+        timerRef.current = setTimeout(() => {
+          if (cancelled) return
+          setStates(STEPS.map(() => 'idle'))
+          setActiveLineIndex(STEPS.map(() => 0))
+          timerRef.current = setTimeout(() => runStep(0), 500)
+        }, RESTART_DELAY_MS)
+        return
+      }
+
+      setStates(prev => { const n = [...prev]; n[stepIndex] = 'active'; return n })
+
+      const step = STEPS[stepIndex]
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = setInterval(() => {
+        if (cancelled) return
+        setActiveLineIndex(prev => {
+          const n = [...prev]; n[stepIndex] = (n[stepIndex] + 1) % step.activeLines.length; return n
+        })
+      }, 900)
+
+      timerRef.current = setTimeout(() => {
+        if (cancelled) return
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+        setStates(prev => { const n = [...prev]; n[stepIndex] = 'done'; return n })
+        timerRef.current = setTimeout(() => runStep(stepIndex + 1), 400)
+      }, step.durationMs)
+    }
+
     timerRef.current = setTimeout(() => runStep(0), 800)
     return () => {
+      cancelled = true
       if (timerRef.current) clearTimeout(timerRef.current)
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [active, runStep])
+  }, [active])
 
   return { states, activeLineIndex, reset }
 }
@@ -346,7 +365,7 @@ export default function PipelineTab() {
               <PipelineNode
                 step={step}
                 state={states[i]}
-                activeLine={mode === 'live' && i === STEP_IDS.indexOf(jobStatus?.step ?? '') ? messages[i] : step.activeLines[sim.activeLineIndex[i]]}
+                activeLine={messages[i]}
               />
               {i < STEPS.length - 1 && (
                 <WireConnector fromState={states[i]} toState={states[i + 1]} />
@@ -567,10 +586,11 @@ function NicheModal({ silos, onConfirm, onCancel }: {
 }) {
   const [selected, setSelected] = useState<number | null>(silos[0]?.id ?? null)
 
-  // Update selection when silos load
+  // Initialize selection once when silos first load (only if not yet selected)
   useEffect(() => {
-    if (silos.length > 0 && !selected) setSelected(silos[0].id)
-  }, [silos, selected])
+    if (silos.length > 0 && selected === null) setSelected(silos[0].id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [silos])
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
