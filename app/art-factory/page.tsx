@@ -6,6 +6,7 @@ import ProductionTab from './components/ProductionTab'
 import TrendsTab from './components/TrendsTab'
 import AnalyticsTab from './components/AnalyticsTab'
 import PipelineTab from './components/PipelineTab'
+import WarehouseTab from './components/WarehouseTab'
 
 const API_BASE = 'http://localhost:3001'
 
@@ -41,12 +42,13 @@ interface ApiHealth {
   ts: string
 }
 
-type TabId = 'overview' | 'production' | 'pipeline' | 'silos' | 'artists' | 'trends' | 'analytics' | 'settings'
+type TabId = 'overview' | 'production' | 'pipeline' | 'warehouse' | 'silos' | 'artists' | 'trends' | 'analytics' | 'settings'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'production', label: 'Production' },
   { id: 'pipeline', label: '⚡ Pipeline' },
+  { id: 'warehouse', label: '🏭 Warehouse' },
   { id: 'silos', label: 'Silos' },
   { id: 'artists', label: 'Artists' },
   { id: 'trends', label: 'Trends' },
@@ -152,6 +154,8 @@ export default function ArtFactoryPage() {
         )}
 
         {activeTab === 'pipeline' && <PipelineTab />}
+
+        {activeTab === 'warehouse' && <WarehouseTab silos={silos} />}
 
         {!loading && !error && (
           <>
