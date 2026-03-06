@@ -32,7 +32,12 @@ def _load_env() -> None:
         for line in env_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line.startswith("ANTHROPIC_API_KEY="):
-                os.environ["ANTHROPIC_API_KEY"] = line.split("=", 1)[1].strip()
+                value = line.split("=", 1)[1].strip()
+                # Strip inline comments (anything after unquoted #)
+                if ' #' in value:
+                    value = value[:value.index(' #')].strip()
+                value = value.strip("'\"")
+                os.environ["ANTHROPIC_API_KEY"] = value
                 break
 
 
@@ -139,11 +144,14 @@ def _collect_chapter_files(folder: Path, subdir: str = None) -> list[Path]:
     target = folder / subdir if subdir else folder
     if not target.exists():
         return []
+    # Exclude files that are clearly not chapter content
+    NON_CHAPTER_NAMES = {"readme", "notes", "outline", "todo", "changelog"}
     files = sorted(
         f for f in target.iterdir()
         if f.is_file()
         and f.suffix.lower() in {".txt", ".md"}
         and not f.name.startswith(".")
+        and f.stem.lower() not in NON_CHAPTER_NAMES
     )
     return files
 
@@ -152,20 +160,22 @@ def _collect_chapter_files(folder: Path, subdir: str = None) -> list[Path]:
 # Operation 1 — rewrite_chapter
 # ---------------------------------------------------------------------------
 
-def rewrite_chapter(
+def _rewrite_chapter_internal(
     chapter_text: str,
     chapter_number: int,
     book_title: str,
-    author_id: str = None,
+    author: dict,
 ) -> dict:
     """
-    Rewrite a single chapter in the active author's voice.
+    Internal implementation: rewrite a chapter given an already-loaded author dict.
+    Called by rewrite_chapter() and run_full_book_pipeline() to avoid redundant
+    load_author_files() calls.
 
     Args:
         chapter_text:   Raw chapter text to rewrite.
         chapter_number: Chapter number (used for context, not formatting).
         book_title:     Title of the book being processed.
-        author_id:      Author ID to use; defaults to active author.
+        author:         Already-loaded author dict from load_author_files().
 
     Returns:
         {
@@ -176,7 +186,6 @@ def rewrite_chapter(
             "author_id": str,
         }
     """
-    author = load_author_files(author_id)
     pen_name = author.get("pen_name", "Unknown Author")
     genre = author.get("genre", "fiction")
     voice_guide = author.get("voice_guide_content", "")
@@ -184,7 +193,7 @@ def rewrite_chapter(
     style_rules_raw = author.get("style_rules", {})
     style_block = _format_style_rules(style_rules_raw)
     word_min, word_max = _target_word_range(author)
-    resolved_author_id = author.get("author_id", author_id or "unknown")
+    resolved_author_id = author.get("author_id", "unknown")
 
     system_prompt = f"""You are a professional ghostwriter working in the voice of {pen_name}, a {genre.replace('_', ' ')} author.
 
@@ -236,6 +245,34 @@ Rewrite this chapter in {pen_name}'s voice following all guidelines above. Outpu
         "rewritten_text": rewritten_text,
         "author_id": resolved_author_id,
     }
+
+
+def rewrite_chapter(
+    chapter_text: str,
+    chapter_number: int,
+    book_title: str,
+    author_id: str = None,
+) -> dict:
+    """
+    Rewrite a single chapter in the active author's voice.
+
+    Args:
+        chapter_text:   Raw chapter text to rewrite.
+        chapter_number: Chapter number (used for context, not formatting).
+        book_title:     Title of the book being processed.
+        author_id:      Author ID to use; defaults to active author.
+
+    Returns:
+        {
+            "chapter_number": int,
+            "original_words": int,
+            "rewritten_words": int,
+            "rewritten_text": str,
+            "author_id": str,
+        }
+    """
+    author = load_author_files(author_id)
+    return _rewrite_chapter_internal(chapter_text, chapter_number, book_title, author)
 
 
 # ---------------------------------------------------------------------------
@@ -300,11 +337,11 @@ def run_full_book_pipeline(
         print(f"  [{i}/{len(chapter_files)}] Rewriting '{chapter_file.name}' "
               f"({_word_count(chapter_text)} words)...")
 
-        result = rewrite_chapter(
+        result = _rewrite_chapter_internal(
             chapter_text=chapter_text,
             chapter_number=i,
             book_title=book_title,
-            author_id=author_id,
+            author=author,
         )
 
         out_file = output_folder / f"chapter_{i:02d}.txt"
@@ -401,8 +438,18 @@ def package_book(
     MAX_MANUSCRIPT_WORDS = 15000
     manuscript_words = _word_count(full_manuscript)
     if manuscript_words > MAX_MANUSCRIPT_WORDS:
-        truncated_words = full_manuscript.split()[:MAX_MANUSCRIPT_WORDS]
-        full_manuscript = " ".join(truncated_words) + "\n\n[... manuscript continues ...]"
+        paragraphs = full_manuscript.split("\n\n")
+        words_seen = 0
+        kept = []
+        for para in paragraphs:
+            w = len(para.split())
+            if words_seen + w > MAX_MANUSCRIPT_WORDS:
+                break
+            kept.append(para)
+            words_seen += w
+        full_manuscript = "\n\n".join(kept)
+        if len(kept) < len(paragraphs):
+            full_manuscript += "\n\n[... manuscript continues ...]"
         print(f"  Note      : Manuscript truncated to {MAX_MANUSCRIPT_WORDS:,} words for packaging call")
 
     system_prompt = f"""You are a senior publishing editor specializing in {genre.replace('_', ' ')} fiction, working with author {pen_name}.
@@ -557,8 +604,18 @@ def consistency_check(
     # Truncate to keep within limits
     MAX_MANUSCRIPT_WORDS = 12000
     if _word_count(full_manuscript) > MAX_MANUSCRIPT_WORDS:
-        truncated = full_manuscript.split()[:MAX_MANUSCRIPT_WORDS]
-        full_manuscript = " ".join(truncated) + "\n\n[... manuscript truncated for analysis ...]"
+        paragraphs = full_manuscript.split("\n\n")
+        words_seen = 0
+        kept = []
+        for para in paragraphs:
+            w = len(para.split())
+            if words_seen + w > MAX_MANUSCRIPT_WORDS:
+                break
+            kept.append(para)
+            words_seen += w
+        full_manuscript = "\n\n".join(kept)
+        if len(kept) < len(paragraphs):
+            full_manuscript += "\n\n[... manuscript truncated for analysis ...]"
         print(f"  Note      : Manuscript truncated to {MAX_MANUSCRIPT_WORDS:,} words for consistency check")
 
     system_prompt = f"""You are a professional continuity editor for {pen_name}, a {genre.replace('_', ' ')} author.
