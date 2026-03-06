@@ -43,9 +43,25 @@ class AuthorNotFoundError(ValueError):
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+def _safe_author_dir(author_id: str) -> Path:
+    """Resolve author directory and reject path traversal or illegal characters."""
+    import re
+    if not re.match(r'^[a-z0-9_-]+$', author_id):
+        raise ValueError(
+            f"author_id '{author_id}' contains invalid characters. "
+            f"Only lowercase letters, digits, underscores, and hyphens are allowed."
+        )
+    resolved = (AUTHOR_PROFILES_DIR / author_id).resolve()
+    if not resolved.is_relative_to(AUTHOR_PROFILES_DIR.resolve()):
+        raise ValueError(
+            f"Invalid author_id '{author_id}': must not contain path separators or traversal sequences."
+        )
+    return resolved
+
+
 def _load_profile(author_id: str) -> dict:
     """Load profile.json for the given author_id. Raises AuthorNotFoundError if missing."""
-    profile_path = AUTHOR_PROFILES_DIR / author_id / "profile.json"
+    profile_path = _safe_author_dir(author_id) / "profile.json"
     if not profile_path.exists():
         raise AuthorNotFoundError(author_id)
     with open(profile_path, "r", encoding="utf-8") as f:
@@ -61,6 +77,11 @@ def _load_active_author_id() -> str:
         )
     with open(ACTIVE_AUTHOR_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
+    if "active_author_id" not in data:
+        raise FileNotFoundError(
+            f"active_author.json at {ACTIVE_AUTHOR_FILE} is missing the 'active_author_id' key. "
+            f"Run 'python author_manager.py switch <author_id>' to reset it."
+        )
     return data["active_author_id"]
 
 
@@ -134,7 +155,7 @@ def switch_author(author_id: str) -> dict:
 
     Raises AuthorNotFoundError if the author does not exist.
     """
-    author_dir = AUTHOR_PROFILES_DIR / author_id
+    author_dir = _safe_author_dir(author_id)
     if not author_dir.is_dir():
         raise AuthorNotFoundError(author_id)
 
@@ -144,9 +165,11 @@ def switch_author(author_id: str) -> dict:
         "active_author_id": author_id,
         "switched_at": datetime.now(timezone.utc).isoformat(),
     }
-    with open(ACTIVE_AUTHOR_FILE, "w", encoding="utf-8") as f:
+    tmp = ACTIVE_AUTHOR_FILE.with_suffix(".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(active_data, f, indent=2)
         f.write("\n")
+    tmp.replace(ACTIVE_AUTHOR_FILE)
 
     return profile
 
@@ -185,7 +208,7 @@ def create_author(profile_data: dict) -> dict:
     pen_name = profile_data["pen_name"]
     target_words = profile_data.get("target_words_per_chapter", [3300, 3500])
 
-    author_dir = AUTHOR_PROFILES_DIR / author_id
+    author_dir = _safe_author_dir(author_id)
     if author_dir.exists():
         raise FileExistsError(
             f"Author directory already exists: {author_dir}. "
@@ -281,7 +304,7 @@ def load_author_files(author_id: str = None) -> dict:
     else:
         profile = _load_profile(author_id)
 
-    author_dir = AUTHOR_PROFILES_DIR / author_id
+    author_dir = _safe_author_dir(author_id)
 
     def _read_md(filename: str) -> str:
         path = author_dir / filename
