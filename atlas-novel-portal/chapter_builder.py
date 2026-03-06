@@ -11,6 +11,18 @@ import novel_engine
 
 
 # ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _resolve_chapter_type(profile: dict, chapter_number: int) -> str:
+    """Resolve chapter type from an already-loaded author profile dict."""
+    chapter_types = profile.get("chapter_types", [])
+    if not chapter_types:
+        return "STANDARD"
+    return chapter_types[(chapter_number - 1) % len(chapter_types)]
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -28,16 +40,11 @@ def get_chapter_type(chapter_number: int, author_id: str = None) -> str:
         The chapter type string from the author's chapter_types list.
     """
     if author_id is not None:
-        profile = author_manager._load_profile(author_id)
+        profile = author_manager.get_author(author_id)
     else:
         profile = author_manager.get_active_author()
 
-    chapter_types = profile.get("chapter_types", [])
-    if not chapter_types:
-        return "STANDARD"
-
-    index = (chapter_number - 1) % len(chapter_types)
-    return chapter_types[index]
+    return _resolve_chapter_type(profile, chapter_number)
 
 
 def build_chapter(
@@ -71,7 +78,7 @@ def build_chapter(
     """
     # Load profile for validation and chapter_type resolution
     if author_id is not None:
-        profile = author_manager._load_profile(author_id)
+        profile = author_manager.get_author(author_id)
     else:
         profile = author_manager.get_active_author()
 
@@ -85,11 +92,7 @@ def build_chapter(
             )
 
     # Determine chapter type from rotation
-    chapter_types = profile.get("chapter_types", [])
-    if chapter_types:
-        chapter_type = chapter_types[(chapter_number - 1) % len(chapter_types)]
-    else:
-        chapter_type = "STANDARD"
+    chapter_type = _resolve_chapter_type(profile, chapter_number)
 
     # Delegate to novel_engine for AI rewriting
     result = novel_engine.rewrite_chapter(

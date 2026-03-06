@@ -185,6 +185,15 @@ def get_active_author() -> dict:
     return _load_profile(active_id)
 
 
+def get_author(author_id: str) -> dict:
+    """
+    Load and return the profile for a specific author by ID.
+
+    Raises AuthorNotFoundError if the author does not exist.
+    """
+    return _load_profile(author_id)
+
+
 def create_author(profile_data: dict) -> dict:
     """
     Create a new author profile directory with scaffolded files.
