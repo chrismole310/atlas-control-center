@@ -1,6 +1,8 @@
 'use strict';
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { query } = require('../../core/database');
 const { runPipeline, openFolder } = require('../generate-pipeline');
 const { createLogger } = require('../../core/logger');
@@ -105,6 +107,21 @@ router.get('/:jobId/status', (req, res) => {
     error: job.error,
     result: job.result,
   });
+});
+
+// ── GET /api/generate/:jobId/artwork ──────────────────────────────────────────
+
+router.get('/:jobId/artwork', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job.result?.artworkPath) return res.status(400).json({ error: 'Artwork not ready' });
+
+  const artworkPath = job.result.artworkPath;
+  if (!fs.existsSync(artworkPath)) return res.status(404).json({ error: 'Artwork file not found' });
+
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  fs.createReadStream(artworkPath).pipe(res);
 });
 
 // ── POST /api/generate/:jobId/open-folder ─────────────────────────────────────
