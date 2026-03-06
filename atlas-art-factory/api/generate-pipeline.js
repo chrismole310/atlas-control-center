@@ -3,7 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 
 const { generateFluxSchnell } = require('../engines/4-ai-artist/engines/flux');
 const { generateAllMockups } = require('../engines/5-mockup-generation/art-placer');
@@ -31,6 +31,9 @@ function datestamp() {
 }
 
 async function generateSEO(silo, prompt) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is not set — cannot generate SEO copy');
+  }
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const msg = await client.messages.create({
@@ -56,9 +59,17 @@ JSON only, no markdown fences.`,
     }],
   });
 
-  const text = msg.content[0].text.trim();
+  const text = msg.content[0]?.text?.trim() ?? '';
   const start = text.indexOf('{');
-  return JSON.parse(text.slice(start));
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1) {
+    throw new Error(`SEO response contained no JSON. Raw: ${text.slice(0, 200)}`);
+  }
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch (e) {
+    throw new Error(`SEO JSON parse failed: ${e.message}. Raw: ${text.slice(start, start + 200)}`);
+  }
 }
 
 function writeListing(folderPath, seo, price = 4.99) {
@@ -112,7 +123,7 @@ function copyZipToOutput(folderPath, zipPath) {
  */
 async function runPipeline(silo, onProgress) {
   const outputId = `gen_${Date.now()}`;
-  const folderName = `${datestamp()}-${slugify(silo.name)}`;
+  const folderName = `${datestamp()}-${slugify(silo.name)}-${outputId.slice(-6)}`;
   const folderPath = path.join(DESKTOP_OUTPUT, folderName);
   fs.mkdirSync(folderPath, { recursive: true });
 
@@ -158,9 +169,6 @@ async function runPipeline(silo, onProgress) {
 
   const mockupResults = await generateAllMockups(artworkPath, {
     outputPrefix: outputId,
-    onProgress: (scene, i, total) => {
-      progress('mockup-generator', 'active', `Creating ${scene} scene (${i}/${total})…`);
-    },
   });
 
   progress('mockup-generator', 'done', `${mockupResults.length} room mockups ready`);
@@ -205,7 +213,7 @@ async function runPipeline(silo, onProgress) {
 
 function openFolder(folderPath) {
   return new Promise((resolve, reject) => {
-    exec(`open "${folderPath}"`, (err) => {
+    execFile('open', [folderPath], (err) => {
       if (err) reject(err);
       else resolve();
     });
